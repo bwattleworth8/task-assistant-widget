@@ -1,0 +1,164 @@
+const fs = require("node:fs");
+const path = require("node:path");
+const { app, safeStorage } = require("electron");
+
+const SETTINGS_FILE = "settings.json";
+
+const DEFAULT_SETTINGS = {
+  windowBounds: {
+    width: 420,
+    height: 720
+  },
+  windowBoundsByMode: {
+    focus: {
+      width: 330,
+      height: 360
+    },
+    planning: {
+      width: 720,
+      height: 780
+    }
+  },
+  viewMode: "planning",
+  theme: "dark",
+  alwaysOnTop: false,
+  refreshMinutes: 5,
+  boardId: "",
+  boardName: "",
+  encryptedCredentials: null,
+  plainCredentials: null
+};
+
+function getSettingsPath() {
+  return path.join(app.getPath("userData"), SETTINGS_FILE);
+}
+
+function readJson(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function writeJson(filePath, data) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+}
+
+function loadSettings() {
+  const stored = readJson(getSettingsPath());
+
+  return {
+    ...DEFAULT_SETTINGS,
+    ...stored,
+    windowBounds: {
+      ...DEFAULT_SETTINGS.windowBounds,
+      ...(stored.windowBounds || {})
+    },
+    windowBoundsByMode: {
+      ...DEFAULT_SETTINGS.windowBoundsByMode,
+      ...(stored.windowBoundsByMode || {})
+    }
+  };
+}
+
+function saveSettings(nextSettings) {
+  const current = loadSettings();
+  const merged = {
+    ...current,
+    ...nextSettings,
+    windowBounds: {
+      ...current.windowBounds,
+      ...(nextSettings.windowBounds || {})
+    },
+    windowBoundsByMode: {
+      ...current.windowBoundsByMode,
+      ...(nextSettings.windowBoundsByMode || {})
+    }
+  };
+
+  writeJson(getSettingsPath(), merged);
+  return merged;
+}
+
+function encryptCredentials(credentials) {
+  const payload = JSON.stringify(credentials);
+
+  if (safeStorage.isEncryptionAvailable()) {
+    return {
+      mode: "safeStorage",
+      value: safeStorage.encryptString(payload).toString("base64")
+    };
+  }
+
+  return null;
+}
+
+function decryptCredentials(encryptedCredentials) {
+  if (!encryptedCredentials || encryptedCredentials.mode !== "safeStorage") {
+    return null;
+  }
+
+  try {
+    const encryptedBuffer = Buffer.from(encryptedCredentials.value, "base64");
+    return JSON.parse(safeStorage.decryptString(encryptedBuffer));
+  } catch {
+    return null;
+  }
+}
+
+function saveCredentials(credentials) {
+  const encryptedCredentials = encryptCredentials(credentials);
+
+  if (encryptedCredentials) {
+    return saveSettings({
+      encryptedCredentials,
+      plainCredentials: null
+    });
+  }
+
+  return saveSettings({
+    encryptedCredentials: null,
+    plainCredentials: credentials
+  });
+}
+
+function loadCredentials() {
+  const settings = loadSettings();
+  const decrypted = decryptCredentials(settings.encryptedCredentials);
+
+  if (decrypted) {
+    return decrypted;
+  }
+
+  return settings.plainCredentials;
+}
+
+function getPublicSettings() {
+  const settings = loadSettings();
+  const credentials = loadCredentials();
+
+  return {
+    alwaysOnTop: settings.alwaysOnTop,
+    viewMode: settings.viewMode,
+    theme: settings.theme,
+    refreshMinutes: settings.refreshMinutes,
+    boardId: settings.boardId,
+    boardName: settings.boardName,
+    hasCredentials: Boolean(credentials?.apiKey && credentials?.token),
+    encryptionAvailable: safeStorage.isEncryptionAvailable()
+  };
+}
+
+module.exports = {
+  getPublicSettings,
+  loadCredentials,
+  loadSettings,
+  saveCredentials,
+  saveSettings
+};

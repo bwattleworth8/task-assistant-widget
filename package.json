@@ -1,0 +1,14 @@
+{
+  "name": "trello-focus-widget",
+  "version": "0.1.0",
+  "description": "A lightweight Windows desktop widget for staying focused on Trello tasks.",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "node scripts/start-electron.js",
+    "check": "node --check scripts/start-electron.js && node --check src/main.js && node --check src/preload.js && node --check src/settingsStore.js && node --check src/trelloClient.js && node --check src/renderer/app.js"
+  },
+  "devDependencies": {
+    "electron": "^39.2.6"
+  }
+}
