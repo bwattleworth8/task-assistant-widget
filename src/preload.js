@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld("taskWidget", {
   getCards: () => ipcRenderer.invoke("trello:cards"),
   completeCard: (cardId) => ipcRenderer.invoke("trello:complete", cardId),
   addTimeSpent: (cardId, minutes) => ipcRenderer.invoke("trello:addTimeSpent", cardId, minutes),
+  addComment: (cardId, text) => ipcRenderer.invoke("trello:addComment", cardId, text),
   openExternal: (url) => ipcRenderer.invoke("shell:openExternal", url),
   setAlwaysOnTop: (enabled) => ipcRenderer.invoke("window:alwaysOnTop", enabled),
   setViewMode: (viewMode) => ipcRenderer.invoke("window:viewMode", viewMode),

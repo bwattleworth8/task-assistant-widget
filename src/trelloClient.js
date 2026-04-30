@@ -173,6 +173,24 @@ class TrelloClient {
       }
     });
   }
+
+  async addCardComment(cardId, text) {
+    if (!cardId) {
+      throw new Error("Missing Trello card id.");
+    }
+
+    const commentText = String(text || "").trim();
+    if (!commentText) {
+      throw new Error("Write a note before saving it to Trello.");
+    }
+
+    return this.request(`/cards/${cardId}/actions/comments`, {
+      method: "POST",
+      query: {
+        text: commentText
+      }
+    });
+  }
 }
 
 function normalizeCard(card, listName, timeSpentField) {

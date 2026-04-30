@@ -62,6 +62,7 @@ const elements = {
   openFocusButton: document.querySelector("#openFocusButton"),
   focusNotesInput: document.querySelector("#focusNotesInput"),
   focusNotesCount: document.querySelector("#focusNotesCount"),
+  focusNoteFormatButtons: [...document.querySelectorAll("[data-note-format]")],
   todayQueueCount: document.querySelector("#todayQueueCount"),
   todayQueueEmpty: document.querySelector("#todayQueueEmpty"),
   todayQueueList: document.querySelector("#todayQueueList"),
@@ -114,6 +115,9 @@ function bindEvents() {
   elements.openFocusButton.addEventListener("click", () => openTask(state.focusTask?.url));
   elements.focusHeaderOpenButton.addEventListener("click", () => openTask(state.focusTask?.url));
   elements.focusNotesInput.addEventListener("input", handleFocusNotesInput);
+  for (const button of elements.focusNoteFormatButtons) {
+    button.addEventListener("click", () => applyNoteFormat(button.dataset.noteFormat));
+  }
   elements.acceptNextButton.addEventListener("click", acceptNextSuggestion);
   elements.dismissNextButton.addEventListener("click", dismissNextSuggestion);
   elements.clearListFiltersButton.addEventListener("click", clearListFilters);
@@ -206,8 +210,11 @@ async function setViewMode(viewMode, showStatus = true) {
     if (showStatus) {
       setStatus(`${state.settings.viewMode === "focus" ? "Focus" : "Plan"} mode.`);
     }
+
+    return true;
   } catch (error) {
     setStatus(error.message, true);
+    return false;
   }
 }
 
@@ -923,12 +930,12 @@ function setNextSuggestionFromToday(excludedCardId) {
   state.nextSuggestion = nextTask;
 }
 
-function acceptNextSuggestion() {
+async function acceptNextSuggestion() {
   if (!state.nextSuggestion) {
     return;
   }
 
-  setFocusTask(state.nextSuggestion);
+  await setFocusTask(state.nextSuggestion);
 }
 
 function dismissNextSuggestion() {
@@ -937,10 +944,25 @@ function dismissNextSuggestion() {
   setStatus("Next task dismissed.");
 }
 
-function setFocusTask(task) {
+async function setFocusTask(task) {
   if (state.timer.isRunning || state.timer.elapsedMs > 0) {
     setStatus("Save the current timer before changing focus.", true);
     return;
+  }
+
+  if (state.focusTask?.id && state.focusTask.id !== task.id) {
+    setLoading(true);
+    setStatus("Ending previous focus...");
+
+    try {
+      await syncFocusNoteToTrello(state.focusTask);
+    } catch (error) {
+      setStatus(error.message, true);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
   }
 
   state.focusTask = task;
@@ -950,9 +972,25 @@ function setFocusTask(task) {
   setStatus(`Focused: ${task.name}`);
 }
 
-function clearFocus() {
+async function clearFocus() {
   if (state.timer.isRunning || state.timer.elapsedMs > 0) {
     setStatus("Save the current timer before clearing focus.", true);
+    return;
+  }
+
+  if (!state.focusTask) {
+    return;
+  }
+
+  const focusTask = state.focusTask;
+  setLoading(true);
+  setStatus("Clearing focus...");
+
+  try {
+    await syncFocusNoteToTrello(focusTask);
+  } catch (error) {
+    setStatus(error.message, true);
+    setLoading(false);
     return;
   }
 
@@ -962,11 +1000,19 @@ function clearFocus() {
   setNextSuggestionFromToday(clearedTaskId);
   renderTasks();
   setStatus("Focus cleared.");
+  setLoading(false);
 }
 
-function startFocusTimer() {
+async function startFocusTimer() {
   if (!state.focusTask || state.timer.isRunning) {
     return;
+  }
+
+  if (state.settings?.viewMode !== "focus") {
+    const enteredFocusMode = await setViewMode("focus", false);
+    if (!enteredFocusMode) {
+      return;
+    }
   }
 
   state.timer.isRunning = true;
@@ -1161,11 +1207,94 @@ function renderFocusNotes(task) {
   }
 
   elements.focusNotesInput.disabled = !task;
+  for (const button of elements.focusNoteFormatButtons) {
+    button.disabled = !task;
+  }
+
   elements.focusNotesInput.value = task ? getFocusNote(task.id) : "";
   elements.focusNotesInput.placeholder = task
     ? "e.g. Things to look into, blockers, ideas..."
     : "Choose a focus task to start notes...";
   updateFocusNotesCount();
+}
+
+function applyNoteFormat(format) {
+  const input = elements.focusNotesInput;
+  if (!state.focusTask || !input || input.disabled) {
+    return;
+  }
+
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? input.value.length;
+  const selectedText = input.value.slice(start, end);
+  const formatted = getFormattedNoteText(format, selectedText);
+
+  if (!formatted) {
+    return;
+  }
+
+  const nextValue = `${input.value.slice(0, start)}${formatted.text}${input.value.slice(end)}`;
+  if (nextValue.length > FOCUS_NOTES_MAX_LENGTH) {
+    setStatus("Focus note is already at the character limit.", true);
+    return;
+  }
+
+  input.value = nextValue;
+  input.focus();
+  input.setSelectionRange(start + formatted.selectionStart, start + formatted.selectionEnd);
+  handleFocusNotesInput();
+}
+
+function getFormattedNoteText(format, selectedText) {
+  if (format === "bold") {
+    const text = selectedText || "bold text";
+    return {
+      text: `**${text}**`,
+      selectionStart: 2,
+      selectionEnd: 2 + text.length
+    };
+  }
+
+  if (format === "italic") {
+    const text = selectedText || "italic text";
+    return {
+      text: `*${text}*`,
+      selectionStart: 1,
+      selectionEnd: 1 + text.length
+    };
+  }
+
+  if (format === "list") {
+    if (!selectedText) {
+      return {
+        text: "- List item",
+        selectionStart: 2,
+        selectionEnd: 11
+      };
+    }
+
+    const text = selectedText
+      .split(/\r?\n/)
+      .map((line) => (line.startsWith("- ") ? line : `- ${line}`))
+      .join("\n");
+
+    return {
+      text,
+      selectionStart: 0,
+      selectionEnd: text.length
+    };
+  }
+
+  if (format === "link") {
+    const text = selectedText || "link text";
+    return {
+      text: `[${text}](url)`,
+      selectionStart: text.length + 3,
+      selectionEnd: text.length + 6
+    };
+  }
+
+  return null;
 }
 
 function handleFocusNotesInput() {
@@ -1208,6 +1337,39 @@ function saveFocusNote(cardId, note) {
   } catch {
     setStatus("Could not save focus note locally.", true);
   }
+}
+
+function deleteFocusNote(cardId) {
+  const notes = loadFocusNotes();
+  delete notes[cardId];
+
+  try {
+    window.localStorage.setItem(FOCUS_NOTES_STORAGE_KEY, JSON.stringify(notes));
+  } catch {
+    setStatus("Could not clear the local focus note.", true);
+  }
+}
+
+async function syncFocusNoteToTrello(task) {
+  if (!task?.id) {
+    return false;
+  }
+
+  const note = getFocusNote(task.id).trim();
+  if (!note) {
+    return false;
+  }
+
+  setStatus("Saving focus note to Trello...");
+  await window.taskWidget.addComment(task.id, note);
+  deleteFocusNote(task.id);
+
+  if (state.focusTask?.id === task.id) {
+    elements.focusNotesInput.value = "";
+    updateFocusNotesCount();
+  }
+
+  return true;
 }
 
 function loadFocusNotes() {
@@ -1349,21 +1511,28 @@ async function completeTask(cardId) {
     return;
   }
 
-  if (cardId === state.focusTask?.id && (state.timer.isRunning || state.timer.elapsedMs > 0)) {
+  const completingFocusTask = cardId === state.focusTask?.id;
+
+  if (completingFocusTask && (state.timer.isRunning || state.timer.elapsedMs > 0)) {
     setStatus("Save the current timer before completing this task.", true);
     return;
   }
 
   setLoading(true);
-  setStatus("Marking complete...");
+  setStatus(completingFocusTask ? "Completing focus..." : "Marking complete...");
 
   try {
+    if (completingFocusTask) {
+      await syncFocusNoteToTrello(state.focusTask);
+      setStatus("Marking complete...");
+    }
+
     const result = await window.taskWidget.completeCard(cardId);
     if (result?.settings) {
       state.settings = result.settings;
     }
     state.tasks = state.tasks.filter((task) => task.id !== cardId);
-    if (state.focusTask?.id === cardId) {
+    if (completingFocusTask) {
       state.focusTask = null;
       resetTimer();
       setNextSuggestionFromToday(cardId);

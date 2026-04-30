@@ -1,4 +1,4 @@
-# Trello Focus Widget Plan
+# Trello Focus Widget Product Roadmap
 
 ## Product Goal
 
@@ -29,7 +29,7 @@ Build a local Windows desktop widget that helps plan, organize, and focus on Tre
 - Excludes completed cards and template cards.
 - Hides cards in `Done`, `Complete`, or `Completed` lists.
 - Sorts overdue cards first, then upcoming due cards, then no-date cards.
-- Supports filters for all, due, overdue, and no due date.
+- Supports filters for all, due soon, overdue, and no due date.
 - Opens Trello cards in the browser.
 
 ### Focus Task And Timer
@@ -37,6 +37,7 @@ Build a local Windows desktop widget that helps plan, organize, and focus on Tre
 - Current Focus starts empty.
 - User explicitly selects a task to focus.
 - Timer runs as an open-ended count-up session.
+- Clicking **Start Focus** enters Focus Mode and begins the session.
 - Stopped timer sessions write minutes to Trello custom field `Time Spent (mins)`.
 - Focus task can be opened, cleared, or completed.
 - Completing a task sets Trello `dueComplete=true`.
@@ -75,9 +76,17 @@ Build a local Windows desktop widget that helps plan, organize, and focus on Tre
 - Made Lists selectable as local multi-select filters for the planning panes.
 - Replaced the broad Due filter with Due Soon for tasks due within the next 3 days.
 
-## Current Focus Mode Direction
+### Focus Notes Trello Comments
 
-Focus Mode is being refined into a compact left-side rail:
+- Focus notes are editable in Focus Mode and stored locally while drafting.
+- The **Bold**, **Italic**, **List**, and **Link** note toolbar controls insert Markdown-style formatting.
+- When focus is cleared, completed, or replaced, non-empty notes are posted to the Trello card comments/activity section.
+- Local notes are cleared only after Trello confirms the comment write.
+- If the Trello comment write fails, the local note stays available and focus is not ended.
+
+## Focus Mode Direction
+
+Focus Mode uses a compact left-side rail:
 
 - The Electron window anchors to the left edge of the active display.
 - Planning dashboard, sidebar, filters, and queue sections are hidden.
@@ -90,28 +99,44 @@ Focus Mode is being refined into a compact left-side rail:
   - Local notes for the active task.
   - A dedicated **Exit Focus Mode** button.
 
-Notes are local-only in this milestone. They are stored by Trello card ID in browser `localStorage`. Writing notes back to Trello is intentionally deferred.
+Notes are stored by Trello card ID in browser `localStorage` while drafting. When focus is cleared, completed, or replaced, the note is written to Trello as a card comment and then cleared locally after Trello confirms the write.
+
+## Upcoming Roadmap
+
+### Window Close Behavior
+
+- Clicking the native window **X** should quit the application instead of minimizing or hiding it.
+- Keep hide/minimize behavior available only through explicit taskbar or tray actions.
+- Confirm tray quit still exits cleanly after this change.
+
+### Light Mode Styling Pass
+
+- Dark mode is visually strong, but light mode needs a dedicated legibility pass.
+- Some UI surfaces and task items still read as dark-mode elements in light mode.
+- Update light-mode color choices for surfaces, task cards, pills, buttons, borders, text, and metadata so the whole app remains readable and intentional.
 
 ## Trello Behavior
 
 - Trello is the source of truth for cards.
 - Board scope is the selected board only.
 - Completion action updates `dueComplete=true`.
+- Focus notes are written to Trello as card comments when focus ends.
 - Time tracking writes to a number custom field named `Time Spent (mins)`.
-- Queue membership, queue order, focus notes, theme, and view mode are local widget state.
+- Queue membership, queue order, draft focus notes, theme, and view mode are local widget state.
 - The widget should make Trello writes deliberate and visible.
 
-## Next Feature Candidates
+## Roadmap Backlog
 
-1. **Focus notes Trello sync:** write local notes to the Trello card as a comment or append them to the description.
-2. **Task Cleanup panel:** identify cards with missing due dates, missing labels, overdue state, or other planning gaps.
-3. **Daily Time Summary:** show total focus time and distinct tasks worked today.
-4. **Pomodoro presets:** add countdown sessions alongside the existing stopwatch.
-5. **Status Adjuster:** update task status from the widget, likely through list moves, labels, or custom fields.
-6. **Quick Add:** create a new Trello card from a configured template.
-7. **Checklist / Definition Of Done:** show checklist progress in Focus Mode.
+1. **Window close behavior:** clicking the native window **X** should quit the app instead of minimizing or hiding it.
+2. **Light mode styling pass:** improve contrast, surfaces, and remaining dark elements in light mode.
+3. **Task Cleanup panel:** identify cards with missing due dates, missing labels, overdue state, or other planning gaps.
+4. **Daily Time Summary:** show total focus time and distinct tasks worked today.
+5. **Pomodoro presets:** add countdown sessions alongside the existing stopwatch.
+6. **Status Adjuster:** update task status from the widget, likely through list moves, labels, or custom fields.
+7. **Quick Add:** create a new Trello card from a configured template.
+8. **Checklist / Definition Of Done:** show checklist progress in Focus Mode.
 
-## Test Plan
+## Validation Plan
 
 - Run `npm run check`.
 - Verify setup rejects missing or invalid credentials.
@@ -125,7 +150,11 @@ Notes are local-only in this milestone. They are stored by Trello card ID in bro
 - Verify stale queue IDs are pruned only after successful refresh.
 - Verify clearing/completing focus shows the next Today Queue suggestion without auto-focusing it.
 - Verify Focus Mode anchors to the left side and can exit back to full Plan Mode.
-- Verify local focus notes persist per task and do not write to Trello yet.
+- Verify focus note toolbar buttons format selected text or insert Markdown-style scaffolds.
+- Verify clearing, completing, or replacing focus writes non-empty notes to Trello comments.
+- Verify local focus notes are cleared only after Trello confirms the comment write.
+- Verify local focus notes remain available if the Trello comment write fails.
+- Verify clicking the native window **X** quits the app instead of minimizing or hiding it.
 
 ## Assumptions
 

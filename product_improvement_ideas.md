@@ -50,6 +50,7 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 ### Time Tracking
 
 - Focus timer supports open-ended count-up sessions.
+- Clicking **Start Focus** enters Focus Mode automatically.
 - Stopped sessions are saved to Trello custom field `Time Spent (mins)`.
 - Timer UI uses JetBrains Mono with tabular numbers.
 
@@ -67,23 +68,34 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 - Light and dark themes are supported.
 - Typography has been tuned around Inter, Satoshi, and JetBrains Mono.
 
-## In Progress
-
 ### Left-Rail Focus Mode
 
-- Focus Mode is being updated into a compact left-side rail.
+- Focus Mode uses a compact left-side rail.
 - The Electron window anchors to the left edge of the active display.
 - The rail shows the current task, timer, minimal actions, notes, and a dedicated **Exit Focus Mode** button.
 - This replaces the older focus-mode toggle while in the focused view.
 
-### Local Focus Notes
+### Focus Notes Trello Comments
 
 - Focus Mode includes a notes field for the active task.
-- Notes are stored locally by Trello card ID.
-- Notes are not yet written to Trello.
-- Later implementation should decide whether notes become Trello comments, description appends, checklist items, or a custom field.
+- Notes are stored locally by Trello card ID while drafting.
+- The **Bold**, **Italic**, **List**, and **Link** toolbar buttons insert Markdown-style formatting.
+- Notes are written into the Trello card comments/activity section when focus is cleared, completed, or replaced.
+- If the Trello comment write fails, local notes should remain available instead of being discarded.
 
 ## Planned
+
+### Window Close Behavior
+
+- Clicking the native window **X** should quit the application.
+- Hide/minimize behavior should remain available only through explicit taskbar or tray actions.
+- Tray quit should continue to exit the app cleanly.
+
+### Light Mode Styling Pass
+
+- Improve light mode legibility across the dashboard and Focus Mode.
+- Replace remaining dark-mode surfaces or low-contrast text that appear in light mode.
+- Tune light-mode colors for task cards, metadata pills, buttons, borders, and sidebar states.
 
 ### Task Cleanup
 
@@ -131,15 +143,6 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 - Use a configured template to keep new cards consistent.
 - Keep quick capture available without forcing the user into Trello.
 
-### Focus Notes Trello Sync
-
-- Persist local focus notes back to Trello when the user chooses.
-- Candidate approaches:
-  - Add a card comment.
-  - Append to card description.
-  - Write to a custom field.
-  - Create checklist items from structured notes.
-
 ### Checklist / Definition Of Done
 
 - Show Trello checklist progress in the widget.
@@ -168,8 +171,8 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 
 ## Suggested Build Order From Here
 
-1. Finish and test the left-rail Focus Mode.
-2. Decide how local focus notes should sync to Trello.
+1. Make native window **X** quit the app instead of minimizing or hiding it.
+2. Fix light mode styling and legibility.
 3. Add Daily Time Summary using saved timer sessions.
 4. Add Task Cleanup panel.
 5. Add Pomodoro presets.

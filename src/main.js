@@ -525,6 +525,15 @@ function registerIpcHandlers() {
     return client.addTimeSpent(settings.boardId, cardId, minutes);
   });
 
+  ipcMain.handle("trello:addComment", async (_event, cardId, text) => {
+    const client = getConfiguredClient();
+    await client.addCardComment(cardId, text);
+    return {
+      ok: true,
+      cardId
+    };
+  });
+
   ipcMain.handle("shell:openExternal", (_event, url) => {
     if (!/^https:\/\/trello\.com\//.test(String(url))) {
       throw new Error("Only Trello links can be opened from the widget.");
