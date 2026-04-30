@@ -99,13 +99,22 @@
           <div id="sidebarListFilter" class="list-filter"></div>
         </section>
 
-        <section class="focus-tip" aria-label="Focus tip">
-          <p class="tip-title">Focus Tip</p>
-          <p>Break large tasks into smaller steps.</p>
-          <div class="tip-dots" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
+        <div class="sidebar-divider daily-summary-divider"></div>
+
+        <section class="daily-time-summary" aria-label="Daily time summary">
+          <div class="daily-summary-heading">
+            <p>Daily Summary</p>
+            <span>Today</span>
+          </div>
+          <div class="daily-summary-stats">
+            <div class="daily-summary-stat">
+              <span id="dailySummaryTime" class="daily-summary-value">0m</span>
+              <span>Total focus time</span>
+            </div>
+            <div class="daily-summary-stat">
+              <span id="dailySummaryTasks" class="daily-summary-value">0</span>
+              <span id="dailySummaryTaskLabel">tasks worked</span>
+            </div>
           </div>
         </section>
       </aside>
@@ -231,7 +240,7 @@
               <div class="task-actions focus-card-actions">
                 <button id="completeFocusButton" class="secondary-button" type="button">Complete</button>
                 <button id="openFocusButton" class="secondary-button" type="button">Open</button>
-                <button id="clearFocusButton" class="secondary-button" type="button">Clear Focus</button>
+                <button id="clearFocusButton" class="secondary-button" type="button">End Focus Session</button>
               </div>
             </div>
           </section>

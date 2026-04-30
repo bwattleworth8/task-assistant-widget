@@ -39,6 +39,7 @@ Build a local Windows desktop widget that helps plan, organize, and focus on Tre
 - Timer runs as an open-ended count-up session.
 - Clicking **Start Focus** enters Focus Mode and begins the session.
 - Stopped timer sessions write minutes to Trello custom field `Time Spent (mins)`.
+- Saved timer sessions are recorded locally for the Plan Mode Daily Summary.
 - Focus task can be opened, cleared, or completed.
 - Completing a task sets Trello `dueComplete=true`.
 
@@ -75,6 +76,14 @@ Build a local Windows desktop widget that helps plan, organize, and focus on Tre
 - Renamed the sidebar Projects area to Lists.
 - Made Lists selectable as local multi-select filters for the planning panes.
 - Replaced the broad Due filter with Due Soon for tasks due within the next 3 days.
+- The left sidebar remains fixed while the planning workspace scrolls.
+- The Lists section scrolls independently when there are many Trello lists.
+
+### Daily Time Summary
+
+- Plan Mode sidebar shows total saved focus time for the current day.
+- Plan Mode sidebar shows the number of distinct tasks worked on today.
+- Summary uses locally recorded timer sessions after Trello confirms the time save.
 
 ### Focus Notes Trello Comments
 
@@ -130,11 +139,10 @@ Notes are stored by Trello card ID in browser `localStorage` while drafting. Whe
 1. **Window close behavior:** clicking the native window **X** should quit the app instead of minimizing or hiding it.
 2. **Light mode styling pass:** improve contrast, surfaces, and remaining dark elements in light mode.
 3. **Task Cleanup panel:** identify cards with missing due dates, missing labels, overdue state, or other planning gaps.
-4. **Daily Time Summary:** show total focus time and distinct tasks worked today.
-5. **Pomodoro presets:** add countdown sessions alongside the existing stopwatch.
-6. **Status Adjuster:** update task status from the widget, likely through list moves, labels, or custom fields.
-7. **Quick Add:** create a new Trello card from a configured template.
-8. **Checklist / Definition Of Done:** show checklist progress in Focus Mode.
+4. **Pomodoro presets:** add countdown sessions alongside the existing stopwatch.
+5. **Status Adjuster:** update task status from the widget, likely through list moves, labels, or custom fields.
+6. **Quick Add:** create a new Trello card from a configured template.
+7. **Checklist / Definition Of Done:** show checklist progress in Focus Mode.
 
 ## Validation Plan
 
@@ -150,6 +158,9 @@ Notes are stored by Trello card ID in browser `localStorage` while drafting. Whe
 - Verify stale queue IDs are pruned only after successful refresh.
 - Verify clearing/completing focus shows the next Today Queue suggestion without auto-focusing it.
 - Verify Focus Mode anchors to the left side and can exit back to full Plan Mode.
+- Verify Plan Mode keeps the sidebar fixed while only the workspace scrolls.
+- Verify the Lists section scrolls independently above the Daily Summary when many lists are present.
+- Verify saving focus time updates Daily Summary total time and distinct task count.
 - Verify focus note toolbar buttons format selected text or insert Markdown-style scaffolds.
 - Verify clearing, completing, or replacing focus writes non-empty notes to Trello comments.
 - Verify local focus notes are cleared only after Trello confirms the comment write.

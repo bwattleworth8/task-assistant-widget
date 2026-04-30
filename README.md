@@ -51,6 +51,7 @@ Credentials are saved locally. When Electron `safeStorage` encryption is availab
 - Drag-and-drop queue ordering.
 - Move This Week tasks into Today.
 - All Tasks excludes tasks already in Focus, Today, or This Week.
+- Sidebar Daily Summary shows today's saved focus time and distinct tasks worked.
 
 ## Focus Mode
 
@@ -69,6 +70,7 @@ Credentials are saved locally. When Electron `safeStorage` encryption is availab
 
 - Timer is a count-up stopwatch.
 - Saved time writes to Trello custom field `Time Spent (mins)`.
+- Saved sessions are recorded locally for the Plan Mode Daily Summary.
 - The timer uses JetBrains Mono and tabular numbers for stable display.
 
 ## Focus Notes

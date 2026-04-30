@@ -974,7 +974,7 @@ body.focus-mode .focus-card-actions .secondary-button {
 body {
   min-height: 100vh;
   background: var(--bg-glow), var(--bg);
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 body.theme-light {
@@ -1000,7 +1000,9 @@ body.theme-light {
 .app-shell {
   display: grid;
   grid-template-columns: 292px minmax(0, 1fr);
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
   padding: 0;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.025), transparent 24%),
@@ -1011,7 +1013,9 @@ body.theme-light {
   display: flex;
   flex-direction: column;
   gap: 22px;
-  min-height: 100vh;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
   padding: 34px 18px 24px;
   border-right: 1px solid var(--line);
   background:
@@ -1143,14 +1147,17 @@ body.theme-light .sidebar {
 }
 
 .sidebar-divider {
+  flex: 0 0 auto;
   height: 1px;
   background: var(--line);
 }
 
 .list-filter-panel {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
 }
 
 .sidebar-section-heading {
@@ -1181,6 +1188,11 @@ body.theme-light .sidebar {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(169, 148, 255, 0.42) transparent;
 }
 
 .list-filter-item,
@@ -1280,11 +1292,11 @@ body.theme-light .sidebar {
   color: #62d8ff;
 }
 
-.focus-tip {
-  margin-top: auto;
+.daily-time-summary {
+  flex: 0 0 auto;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
-  padding: 18px 20px;
+  padding: 16px;
   color: var(--muted);
   background:
     radial-gradient(circle at 0% 0%, rgba(169, 148, 255, 0.18), transparent 40%),
@@ -1292,38 +1304,65 @@ body.theme-light .sidebar {
   box-shadow: var(--soft-shadow);
 }
 
-.tip-title {
-  margin: 0 0 10px;
+.daily-summary-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.daily-summary-heading p {
+  margin: 0;
   color: var(--text);
   font-weight: var(--weight-semibold);
 }
 
-.focus-tip p:last-of-type {
+.daily-summary-heading span {
+  border-radius: 999px;
+  padding: 3px 7px;
+  color: var(--accent-strong);
+  background: rgba(169, 148, 255, 0.12);
+  font-size: 10px;
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+}
+
+.daily-summary-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.daily-summary-stat {
+  min-width: 0;
+}
+
+.daily-summary-stat span {
+  display: block;
   margin: 0;
-  line-height: 1.45;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.3;
 }
 
-.tip-dots {
-  display: flex;
-  justify-content: center;
-  gap: 7px;
-  margin-top: 18px;
-}
-
-.tip-dots span {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
-}
-
-.tip-dots span:first-child {
-  background: var(--accent);
+.daily-summary-stat .daily-summary-value {
+  margin-bottom: 3px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 19px;
+  font-weight: var(--weight-medium);
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
 }
 
 .workspace {
   min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
   padding: 34px 40px 40px;
+  scrollbar-gutter: stable;
 }
 
 .titlebar {
@@ -1768,14 +1807,14 @@ label,
 .brand-block h1,
 .titlebar h2,
 .focus-panel h2,
-.tip-title {
+.daily-summary-heading p {
   font-weight: var(--weight-semibold);
 }
 
 .titlebar p,
 .status-strip,
 .field-hint,
-.focus-tip p,
+.daily-summary-stat span,
 .focus-empty p,
 .empty-state p,
 #focusTimeTotal {
@@ -1805,14 +1844,31 @@ label,
 }
 
 @media (max-width: 760px) {
+  body {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
   .app-shell {
     display: block;
+    height: auto;
+    overflow: visible;
   }
 
   .sidebar {
+    height: auto;
     min-height: auto;
+    overflow: visible;
     border-right: 0;
     border-bottom: 1px solid var(--line);
+  }
+
+  .list-filter-panel {
+    flex: 0 1 auto;
+  }
+
+  .list-filter {
+    max-height: 220px;
   }
 
   .sidebar-nav {
@@ -1820,11 +1876,14 @@ label,
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .focus-tip {
+  .daily-summary-divider,
+  .daily-time-summary {
     display: none;
   }
 
   .workspace {
+    height: auto;
+    overflow: visible;
     padding: 22px 14px;
   }
 

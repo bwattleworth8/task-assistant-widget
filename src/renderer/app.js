@@ -21,7 +21,9 @@ const state = {
 };
 
 const FOCUS_NOTES_STORAGE_KEY = "trello-focus-widget:focus-notes";
+const FOCUS_SESSIONS_STORAGE_KEY = "trello-focus-widget:focus-sessions";
 const FOCUS_NOTES_MAX_LENGTH = 1000;
+const MAX_STORED_FOCUS_SESSIONS = 500;
 const DUE_SOON_DAYS = 3;
 
 const elements = {
@@ -74,6 +76,9 @@ const elements = {
   sidebarAllTasksCount: document.querySelector("#sidebarAllTasksCount"),
   sidebarListFilter: document.querySelector("#sidebarListFilter"),
   clearListFiltersButton: document.querySelector("#clearListFiltersButton"),
+  dailySummaryTime: document.querySelector("#dailySummaryTime"),
+  dailySummaryTasks: document.querySelector("#dailySummaryTasks"),
+  dailySummaryTaskLabel: document.querySelector("#dailySummaryTaskLabel"),
   sidebarLinks: [...document.querySelectorAll(".sidebar-link")],
   workspaceTitle: document.querySelector("#workspaceTitle"),
   workspaceSubtitle: document.querySelector("#workspaceSubtitle"),
@@ -760,6 +765,22 @@ function renderSidebar() {
   }
 
   renderListFilters();
+  renderDailyTimeSummary();
+}
+
+function renderDailyTimeSummary() {
+  if (!elements.dailySummaryTime || !elements.dailySummaryTasks) {
+    return;
+  }
+
+  const summary = getTodayFocusSummary();
+  elements.dailySummaryTime.textContent = formatSummaryDuration(summary.totalMinutes);
+  elements.dailySummaryTasks.textContent = String(summary.distinctTaskCount);
+
+  if (elements.dailySummaryTaskLabel) {
+    elements.dailySummaryTaskLabel.textContent =
+      summary.distinctTaskCount === 1 ? "task worked" : "tasks worked";
+  }
 }
 
 function getWorkspaceViewLabel(workspaceView) {
@@ -1049,6 +1070,7 @@ async function stopFocusTimerAndSave() {
   try {
     const result = await window.taskWidget.addTimeSpent(state.focusTask.id, minutes);
     applyTimeSpentUpdate(result.cardId, result.totalMinutes);
+    recordFocusSession(state.focusTask, result.minutesAdded);
     resetTimer();
     renderTasks();
     setStatus(`Added ${result.minutesAdded} mins to Trello.`);
@@ -1072,6 +1094,110 @@ function applyTimeSpentUpdate(cardId, totalMinutes) {
       timeSpentMins: totalMinutes
     };
   }
+}
+
+function recordFocusSession(task, minutes) {
+  const minutesWorked = Number(minutes);
+  if (!task?.id || !Number.isFinite(minutesWorked) || minutesWorked <= 0) {
+    return;
+  }
+
+  const savedAt = new Date();
+  const sessions = loadFocusSessions();
+  sessions.push({
+    cardId: task.id,
+    taskName: task.name || "Untitled task",
+    minutes: Math.max(1, Math.round(minutesWorked)),
+    savedAt: savedAt.toISOString(),
+    dayKey: getLocalDayKey(savedAt)
+  });
+
+  saveFocusSessions(sessions.slice(-MAX_STORED_FOCUS_SESSIONS));
+}
+
+function getTodayFocusSummary() {
+  const todayKey = getLocalDayKey(new Date());
+  const distinctTaskIds = new Set();
+  let totalMinutes = 0;
+
+  for (const session of loadFocusSessions()) {
+    if (getFocusSessionDayKey(session) !== todayKey) {
+      continue;
+    }
+
+    totalMinutes += session.minutes;
+    distinctTaskIds.add(session.cardId);
+  }
+
+  return {
+    totalMinutes,
+    distinctTaskCount: distinctTaskIds.size
+  };
+}
+
+function loadFocusSessions() {
+  try {
+    const sessions = JSON.parse(window.localStorage.getItem(FOCUS_SESSIONS_STORAGE_KEY) || "[]");
+    if (!Array.isArray(sessions)) {
+      return [];
+    }
+
+    return sessions
+      .map(normalizeFocusSession)
+      .filter(Boolean)
+      .slice(-MAX_STORED_FOCUS_SESSIONS);
+  } catch {
+    return [];
+  }
+}
+
+function normalizeFocusSession(session) {
+  if (!session || typeof session !== "object") {
+    return null;
+  }
+
+  const cardId = String(session.cardId || "").trim();
+  const minutes = Math.max(0, Math.round(Number(session.minutes)));
+  const savedAt = String(session.savedAt || "").trim();
+
+  if (!cardId || !minutes || !savedAt) {
+    return null;
+  }
+
+  return {
+    cardId,
+    taskName: String(session.taskName || "Untitled task"),
+    minutes,
+    savedAt,
+    dayKey: String(session.dayKey || "")
+  };
+}
+
+function saveFocusSessions(sessions) {
+  try {
+    window.localStorage.setItem(FOCUS_SESSIONS_STORAGE_KEY, JSON.stringify(sessions));
+  } catch {
+    setStatus("Could not save the daily time summary locally.", true);
+  }
+}
+
+function getFocusSessionDayKey(session) {
+  if (session.dayKey) {
+    return session.dayKey;
+  }
+
+  return getLocalDayKey(new Date(session.savedAt));
+}
+
+function getLocalDayKey(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function resetTimer() {
@@ -1504,6 +1630,22 @@ function formatDuration(milliseconds) {
   return [hours, minutes, seconds]
     .map((part) => String(part).padStart(2, "0"))
     .join(":");
+}
+
+function formatSummaryDuration(minutes) {
+  const totalMinutes = Math.max(0, Math.round(Number(minutes) || 0));
+  const hours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
+
+  if (hours === 0) {
+    return `${remainingMinutes}m`;
+  }
+
+  if (remainingMinutes === 0) {
+    return `${hours}h`;
+  }
+
+  return `${hours}h ${remainingMinutes}m`;
 }
 
 async function completeTask(cardId) {

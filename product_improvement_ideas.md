@@ -54,6 +54,12 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 - Stopped sessions are saved to Trello custom field `Time Spent (mins)`.
 - Timer UI uses JetBrains Mono with tabular numbers.
 
+### Daily Time Summary
+
+- Plan Mode sidebar shows total saved focus time for the current day.
+- Plan Mode sidebar shows the number of distinct tasks worked on today.
+- Summary is based on locally recorded timer sessions after Trello confirms the time save.
+
 ### Task Filtering
 
 - Completed tasks are excluded.
@@ -107,12 +113,6 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
   - Missing owner.
   - Missing status metadata.
   - Missing estimate.
-
-### Daily Time Summary
-
-- Show total focus time for the current day.
-- Show the number of distinct tasks worked on today.
-- Bring this summary into Focus Mode without requiring Trello to be opened.
 
 ### Pomodoro Presets
 
@@ -173,8 +173,7 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 
 1. Make native window **X** quit the app instead of minimizing or hiding it.
 2. Fix light mode styling and legibility.
-3. Add Daily Time Summary using saved timer sessions.
-4. Add Task Cleanup panel.
-5. Add Pomodoro presets.
-6. Add Status Adjuster.
-7. Add Quick Add.
+3. Add Task Cleanup panel.
+4. Add Pomodoro presets.
+5. Add Status Adjuster.
+6. Add Quick Add.
