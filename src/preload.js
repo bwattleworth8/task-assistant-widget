@@ -12,6 +12,14 @@ contextBridge.exposeInMainWorld("taskWidget", {
   setAlwaysOnTop: (enabled) => ipcRenderer.invoke("window:alwaysOnTop", enabled),
   setViewMode: (viewMode) => ipcRenderer.invoke("window:viewMode", viewMode),
   setTheme: (theme) => ipcRenderer.invoke("settings:theme", theme),
+  addToQueue: (queueName, cardId) => ipcRenderer.invoke("queues:add", queueName, cardId),
+  removeFromQueue: (queueName, cardId) => ipcRenderer.invoke("queues:remove", queueName, cardId),
+  moveQueueItem: (queueName, cardId, direction) =>
+    ipcRenderer.invoke("queues:move", queueName, cardId, direction),
+  moveBetweenQueues: (sourceQueueName, targetQueueName, cardId) =>
+    ipcRenderer.invoke("queues:moveBetween", sourceQueueName, targetQueueName, cardId),
+  reorderQueue: (queueName, cardIds) => ipcRenderer.invoke("queues:reorder", queueName, cardIds),
+  pruneQueues: (validCardIds) => ipcRenderer.invoke("queues:prune", validCardIds),
   hide: () => ipcRenderer.invoke("window:hide"),
   onRefreshRequested: (callback) => {
     const listener = () => callback();

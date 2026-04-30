@@ -23,6 +23,10 @@ const DEFAULT_SETTINGS = {
   theme: "dark",
   alwaysOnTop: false,
   refreshMinutes: 5,
+  queues: {
+    today: [],
+    week: []
+  },
   boardId: "",
   boardName: "",
   encryptedCredentials: null,
@@ -63,6 +67,10 @@ function loadSettings() {
     windowBoundsByMode: {
       ...DEFAULT_SETTINGS.windowBoundsByMode,
       ...(stored.windowBoundsByMode || {})
+    },
+    queues: {
+      today: sanitizeQueueIds(stored.queues?.today),
+      week: sanitizeQueueIds(stored.queues?.week)
     }
   };
 }
@@ -79,11 +87,23 @@ function saveSettings(nextSettings) {
     windowBoundsByMode: {
       ...current.windowBoundsByMode,
       ...(nextSettings.windowBoundsByMode || {})
+    },
+    queues: {
+      ...current.queues,
+      ...(nextSettings.queues || {})
     }
   };
 
   writeJson(getSettingsPath(), merged);
   return merged;
+}
+
+function sanitizeQueueIds(ids) {
+  if (!Array.isArray(ids)) {
+    return [];
+  }
+
+  return [...new Set(ids.map((id) => String(id || "").trim()).filter(Boolean))];
 }
 
 function encryptCredentials(credentials) {
@@ -148,6 +168,7 @@ function getPublicSettings() {
     viewMode: settings.viewMode,
     theme: settings.theme,
     refreshMinutes: settings.refreshMinutes,
+    queues: settings.queues,
     boardId: settings.boardId,
     boardName: settings.boardName,
     hasCredentials: Boolean(credentials?.apiKey && credentials?.token),

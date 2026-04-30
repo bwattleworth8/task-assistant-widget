@@ -301,6 +301,135 @@ function setTheme(theme) {
   return publicSettings;
 }
 
+function normalizeQueueName(queueName) {
+  if (queueName === "today" || queueName === "week") {
+    return queueName;
+  }
+
+  throw new Error("Unknown queue.");
+}
+
+function normalizeCardId(cardId) {
+  const normalizedCardId = String(cardId || "").trim();
+
+  if (!normalizedCardId) {
+    throw new Error("Missing Trello card id.");
+  }
+
+  return normalizedCardId;
+}
+
+function dedupeQueue(ids) {
+  return [...new Set(ids.map((id) => String(id || "").trim()).filter(Boolean))];
+}
+
+function updateQueue(queueName, updater) {
+  const normalizedQueueName = normalizeQueueName(queueName);
+  const settings = loadSettings();
+  const currentQueue = dedupeQueue(settings.queues?.[normalizedQueueName] || []);
+  const nextQueue = dedupeQueue(updater(currentQueue));
+
+  saveSettings({
+    queues: {
+      ...settings.queues,
+      [normalizedQueueName]: nextQueue
+    }
+  });
+
+  return getPublicSettings();
+}
+
+function addCardToQueue(queueName, cardId) {
+  const normalizedCardId = normalizeCardId(cardId);
+  return updateQueue(queueName, (queue) =>
+    queue.includes(normalizedCardId) ? queue : [...queue, normalizedCardId]
+  );
+}
+
+function removeCardFromQueue(queueName, cardId) {
+  const normalizedCardId = normalizeCardId(cardId);
+  return updateQueue(queueName, (queue) => queue.filter((id) => id !== normalizedCardId));
+}
+
+function moveCardInQueue(queueName, cardId, direction) {
+  const normalizedCardId = normalizeCardId(cardId);
+  const offset = Number(direction) < 0 ? -1 : 1;
+
+  return updateQueue(queueName, (queue) => {
+    const currentIndex = queue.indexOf(normalizedCardId);
+    if (currentIndex === -1) {
+      return queue;
+    }
+
+    const nextIndex = currentIndex + offset;
+    if (nextIndex < 0 || nextIndex >= queue.length) {
+      return queue;
+    }
+
+    const nextQueue = [...queue];
+    [nextQueue[currentIndex], nextQueue[nextIndex]] = [nextQueue[nextIndex], nextQueue[currentIndex]];
+    return nextQueue;
+  });
+}
+
+function moveCardBetweenQueues(sourceQueueName, targetQueueName, cardId) {
+  const normalizedSourceQueueName = normalizeQueueName(sourceQueueName);
+  const normalizedTargetQueueName = normalizeQueueName(targetQueueName);
+  const normalizedCardId = normalizeCardId(cardId);
+  const settings = loadSettings();
+  const sourceQueue = dedupeQueue(settings.queues?.[normalizedSourceQueueName] || []);
+  const targetQueue = dedupeQueue(settings.queues?.[normalizedTargetQueueName] || []);
+  const nextQueues = {
+    ...settings.queues,
+    [normalizedSourceQueueName]: sourceQueue.filter((id) => id !== normalizedCardId),
+    [normalizedTargetQueueName]: targetQueue.includes(normalizedCardId)
+      ? targetQueue
+      : [...targetQueue, normalizedCardId]
+  };
+
+  saveSettings({
+    queues: nextQueues
+  });
+
+  return getPublicSettings();
+}
+
+function reorderQueue(queueName, cardIds) {
+  if (!Array.isArray(cardIds)) {
+    throw new Error("Queue order must be an array.");
+  }
+
+  return updateQueue(queueName, () => cardIds);
+}
+
+function pruneQueues(validCardIds) {
+  const validCardIdSet = new Set((validCardIds || []).map((id) => String(id || "").trim()).filter(Boolean));
+  const settings = loadSettings();
+
+  saveSettings({
+    queues: {
+      today: dedupeQueue(settings.queues?.today || []).filter((id) => validCardIdSet.has(id)),
+      week: dedupeQueue(settings.queues?.week || []).filter((id) => validCardIdSet.has(id))
+    }
+  });
+
+  return getPublicSettings();
+}
+
+function removeCardFromAllQueues(cardId) {
+  const normalizedCardId = normalizeCardId(cardId);
+  const settings = loadSettings();
+
+  saveSettings({
+    queues: {
+      today: dedupeQueue(settings.queues?.today || []).filter((id) => id !== normalizedCardId),
+      week: dedupeQueue(settings.queues?.week || []).filter((id) => id !== normalizedCardId)
+    }
+  });
+
+  return getPublicSettings();
+}
+
 function getConfiguredClient() {
   return new TrelloClient(loadCredentials());
 }
@@ -354,7 +483,10 @@ function registerIpcHandlers() {
   ipcMain.handle("trello:complete", async (_event, cardId) => {
     const client = getConfiguredClient();
     await client.completeCard(cardId);
-    return { ok: true };
+    return {
+      ok: true,
+      settings: removeCardFromAllQueues(cardId)
+    };
   });
 
   ipcMain.handle("trello:addTimeSpent", async (_event, cardId, minutes) => {
@@ -376,6 +508,24 @@ function registerIpcHandlers() {
   ipcMain.handle("window:viewMode", (_event, viewMode) => setViewMode(viewMode));
 
   ipcMain.handle("settings:theme", (_event, theme) => setTheme(theme));
+
+  ipcMain.handle("queues:add", (_event, queueName, cardId) => addCardToQueue(queueName, cardId));
+
+  ipcMain.handle("queues:remove", (_event, queueName, cardId) =>
+    removeCardFromQueue(queueName, cardId)
+  );
+
+  ipcMain.handle("queues:move", (_event, queueName, cardId, direction) =>
+    moveCardInQueue(queueName, cardId, direction)
+  );
+
+  ipcMain.handle("queues:moveBetween", (_event, sourceQueueName, targetQueueName, cardId) =>
+    moveCardBetweenQueues(sourceQueueName, targetQueueName, cardId)
+  );
+
+  ipcMain.handle("queues:reorder", (_event, queueName, cardIds) => reorderQueue(queueName, cardIds));
+
+  ipcMain.handle("queues:prune", (_event, validCardIds) => pruneQueues(validCardIds));
 
   ipcMain.handle("window:hide", () => {
     mainWindow?.minimize();

@@ -429,6 +429,19 @@ select {
   color: var(--muted);
 }
 
+.next-suggestion {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.next-suggestion h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  line-height: 1.26;
+  letter-spacing: 0;
+}
+
 .timer-panel {
   display: flex;
   align-items: baseline;
@@ -545,6 +558,77 @@ select {
   border-color: #4d4d4d;
 }
 
+.queue-section {
+  min-height: 120px;
+}
+
+.queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 10px;
+  min-height: 8px;
+  border-radius: 8px;
+}
+
+.queue-list.drag-ready {
+  outline: 1px dashed var(--accent);
+  outline-offset: 4px;
+}
+
+.queue-card {
+  position: relative;
+  background: var(--panel-bg);
+  cursor: grab;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    opacity 140ms ease;
+}
+
+.queue-card:active {
+  cursor: grabbing;
+}
+
+.queue-card.dragging {
+  opacity: 0.58;
+}
+
+.queue-card.drag-over-before,
+.queue-card.drag-over-after {
+  border-color: var(--accent);
+}
+
+.queue-card.drag-over-before::before,
+.queue-card.drag-over-after::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--accent-strong);
+  pointer-events: none;
+}
+
+.queue-card.drag-over-before::before {
+  top: -7px;
+}
+
+.queue-card.drag-over-after::after {
+  bottom: -7px;
+}
+
+.compact-empty {
+  margin-top: 10px;
+  padding: 16px 12px;
+}
+
+.compact-empty h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
 .task-list-section {
   min-height: 220px;
 }
@@ -621,6 +705,7 @@ body.focus-mode main {
 body.focus-mode .titlebar,
 body.focus-mode .toolbar,
 body.focus-mode .status-strip,
+body.focus-mode .queue-section,
 body.focus-mode .task-list-section {
   display: none;
 }

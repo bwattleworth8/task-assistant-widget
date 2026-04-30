@@ -32,6 +32,9 @@ Credentials are saved locally. When Electron's `safeStorage` encryption is avail
 - Shows open, incomplete cards from the selected Trello board.
 - Sorts overdue cards first, then upcoming due dates, then cards without due dates.
 - Keeps the Current Focus pane empty until you choose a task card.
+- Adds local Today Queue and This Week Queue sections for personal planning without changing Trello cards.
+- Lets This Week tasks be promoted into the Today Queue from inside the widget.
+- Suggests the next Today Queue task when you clear or complete the current focus task.
 - Tracks focused work with a count-up timer and writes stopped sessions to a Trello number custom field named `Time Spent (mins)`.
 - Supports Focus Mode for a compact, low-intrusion window and Plan Mode for filtering, settings, and task selection.
 - Persists a Dark Mode / Light Mode preference with an in-app icon toggle.

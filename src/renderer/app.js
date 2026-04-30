@@ -3,6 +3,7 @@ const state = {
   tasks: [],
   activeFilter: "all",
   focusTask: null,
+  nextSuggestion: null,
   timer: {
     isRunning: false,
     startedAt: null,
@@ -10,7 +11,11 @@ const state = {
     intervalId: null
   },
   refreshTimer: null,
-  knownBoards: []
+  knownBoards: [],
+  queueDrag: {
+    queueName: null,
+    cardId: null
+  }
 };
 
 const elements = {
@@ -35,6 +40,11 @@ const elements = {
   focusPanel: document.querySelector("#focusPanel"),
   focusEmpty: document.querySelector("#focusEmpty"),
   focusActive: document.querySelector("#focusActive"),
+  nextSuggestion: document.querySelector("#nextSuggestion"),
+  nextSuggestionTitle: document.querySelector("#nextSuggestionTitle"),
+  nextSuggestionMeta: document.querySelector("#nextSuggestionMeta"),
+  acceptNextButton: document.querySelector("#acceptNextButton"),
+  dismissNextButton: document.querySelector("#dismissNextButton"),
   focusTitle: document.querySelector("#focusTitle"),
   focusMeta: document.querySelector("#focusMeta"),
   focusTimer: document.querySelector("#focusTimer"),
@@ -44,6 +54,12 @@ const elements = {
   clearFocusButton: document.querySelector("#clearFocusButton"),
   completeFocusButton: document.querySelector("#completeFocusButton"),
   openFocusButton: document.querySelector("#openFocusButton"),
+  todayQueueCount: document.querySelector("#todayQueueCount"),
+  todayQueueEmpty: document.querySelector("#todayQueueEmpty"),
+  todayQueueList: document.querySelector("#todayQueueList"),
+  weekQueueCount: document.querySelector("#weekQueueCount"),
+  weekQueueEmpty: document.querySelector("#weekQueueEmpty"),
+  weekQueueList: document.querySelector("#weekQueueList"),
   taskCount: document.querySelector("#taskCount"),
   emptyState: document.querySelector("#emptyState"),
   taskList: document.querySelector("#taskList")
@@ -80,6 +96,8 @@ function bindEvents() {
   elements.clearFocusButton.addEventListener("click", clearFocus);
   elements.completeFocusButton.addEventListener("click", () => completeTask(state.focusTask?.id));
   elements.openFocusButton.addEventListener("click", () => openTask(state.focusTask?.url));
+  elements.acceptNextButton.addEventListener("click", acceptNextSuggestion);
+  elements.dismissNextButton.addEventListener("click", dismissNextSuggestion);
 
   for (const button of elements.modeButtons) {
     button.addEventListener("click", () => setViewMode(button.dataset.viewMode));
@@ -313,6 +331,8 @@ async function loadTasks() {
 
   try {
     state.tasks = await window.taskWidget.getCards();
+    state.settings = await window.taskWidget.pruneQueues(state.tasks.map((task) => task.id));
+    syncSettingsUi();
     renderTasks();
     setStatus(`Updated ${formatTime(new Date())}.`);
   } catch (error) {
@@ -340,6 +360,7 @@ function renderTasks() {
   reconcileFocusWithTasks();
 
   renderFocus(state.focusTask);
+  renderQueues();
   renderTaskList(tasks);
 
   elements.taskCount.textContent = `${tasks.length} shown`;
@@ -349,18 +370,320 @@ function renderTasks() {
 
 function reconcileFocusWithTasks() {
   if (!state.focusTask) {
+    reconcileNextSuggestionWithTasks();
     return;
   }
 
   const freshTask = state.tasks.find((task) => task.id === state.focusTask.id);
   if (freshTask) {
     state.focusTask = freshTask;
+    reconcileNextSuggestionWithTasks();
     return;
   }
 
   if (!state.timer.isRunning) {
     state.focusTask = null;
   }
+
+  reconcileNextSuggestionWithTasks();
+}
+
+function reconcileNextSuggestionWithTasks() {
+  if (!state.nextSuggestion) {
+    return;
+  }
+
+  state.nextSuggestion = state.tasks.find((task) => task.id === state.nextSuggestion.id) || null;
+}
+
+function getQueueIds(queueName) {
+  return state.settings?.queues?.[queueName] || [];
+}
+
+function isQueued(queueName, cardId) {
+  return getQueueIds(queueName).includes(cardId);
+}
+
+function getTaskById(cardId) {
+  return state.tasks.find((task) => task.id === cardId) || null;
+}
+
+function getQueuedTasks(queueName) {
+  return getQueueIds(queueName).map(getTaskById).filter(Boolean);
+}
+
+function renderQueues() {
+  renderQueue("today", elements.todayQueueList, elements.todayQueueEmpty, elements.todayQueueCount);
+  renderQueue("week", elements.weekQueueList, elements.weekQueueEmpty, elements.weekQueueCount);
+}
+
+function renderQueue(queueName, listElement, emptyElement, countElement) {
+  const tasks = getQueuedTasks(queueName);
+  listElement.innerHTML = "";
+  listElement.ondragover = (event) => handleQueueListDragOver(event, queueName, listElement);
+  listElement.ondragleave = (event) => handleQueueListDragLeave(event, listElement);
+  listElement.ondrop = (event) => handleQueueListDrop(event, queueName, listElement);
+  emptyElement.classList.toggle("hidden", tasks.length > 0);
+  countElement.textContent = `${tasks.length} queued`;
+
+  for (const task of tasks) {
+    listElement.append(renderQueueCard(queueName, task));
+  }
+}
+
+function renderQueueCard(queueName, task) {
+  const item = document.createElement("article");
+  item.className = "task-item queue-card";
+  item.draggable = true;
+  item.classList.toggle("active-focus", task.id === state.focusTask?.id);
+  item.addEventListener("dragstart", (event) =>
+    handleQueueDragStart(event, queueName, task.id, item)
+  );
+  item.addEventListener("dragover", (event) =>
+    handleQueueDragOver(event, queueName, task.id, item)
+  );
+  item.addEventListener("dragleave", () => clearQueueDropClasses(item));
+  item.addEventListener("drop", (event) => handleQueueDrop(event, queueName, task.id, item));
+  item.addEventListener("dragend", clearQueueDragState);
+
+  const title = document.createElement("h3");
+  title.textContent = task.name;
+
+  const meta = document.createElement("div");
+  meta.className = "task-meta";
+  renderMeta(meta, task);
+
+  const actions = document.createElement("div");
+  actions.className = "task-actions";
+  actions.addEventListener("mousedown", (event) => event.stopPropagation());
+
+  const focusButton = createActionButton(
+    task.id === state.focusTask?.id ? "Focused" : "Focus",
+    "secondary-button",
+    () => setFocusTask(task)
+  );
+  focusButton.disabled = state.timer.isRunning || state.timer.elapsedMs > 0;
+
+  const openButton = createActionButton("Open", "secondary-button", () => openTask(task.url));
+  const removeButton = createActionButton("Remove", "secondary-button", () =>
+    removeQueuedTask(queueName, task.id)
+  );
+  const queueButtons =
+    queueName === "week"
+      ? [
+          createActionButton("Move to Today", "secondary-button", () =>
+            moveQueuedTaskToToday(task.id)
+          )
+        ]
+      : [];
+
+  actions.append(...queueButtons, focusButton, openButton, removeButton);
+  item.append(title, meta, actions);
+  return item;
+}
+
+function handleQueueDragStart(event, queueName, cardId, item) {
+  if (event.target instanceof Element && event.target.closest("button")) {
+    event.preventDefault();
+    return;
+  }
+
+  state.queueDrag = { queueName, cardId };
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", cardId);
+  window.requestAnimationFrame(() => item.classList.add("dragging"));
+}
+
+function handleQueueDragOver(event, queueName, targetCardId, item) {
+  if (!canDropQueuedTask(queueName, targetCardId)) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  event.dataTransfer.dropEffect = "move";
+  const placement = getQueueDropPlacement(event, item);
+  item.classList.toggle("drag-over-before", placement === "before");
+  item.classList.toggle("drag-over-after", placement === "after");
+}
+
+function handleQueueDrop(event, queueName, targetCardId, item) {
+  if (!canDropQueuedTask(queueName, targetCardId)) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  const placement = getQueueDropPlacement(event, item);
+  clearQueueDropClasses(item);
+  reorderQueuedTask(queueName, state.queueDrag.cardId, targetCardId, placement);
+}
+
+function handleQueueListDragOver(event, queueName, listElement) {
+  if (!canDropQueuedTask(queueName)) {
+    return;
+  }
+
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "move";
+  listElement.classList.add("drag-ready");
+}
+
+function handleQueueListDragLeave(event, listElement) {
+  if (!listElement.contains(event.relatedTarget)) {
+    listElement.classList.remove("drag-ready");
+  }
+}
+
+function handleQueueListDrop(event, queueName, listElement) {
+  if (!canDropQueuedTask(queueName)) {
+    return;
+  }
+
+  if (event.target instanceof Element && event.target.closest(".queue-card")) {
+    return;
+  }
+
+  event.preventDefault();
+  listElement.classList.remove("drag-ready");
+  reorderQueuedTask(queueName, state.queueDrag.cardId);
+}
+
+function canDropQueuedTask(queueName, targetCardId = null) {
+  return Boolean(
+    state.queueDrag.cardId &&
+      state.queueDrag.queueName === queueName &&
+      state.queueDrag.cardId !== targetCardId
+  );
+}
+
+function getQueueDropPlacement(event, item) {
+  const rect = item.getBoundingClientRect();
+  return event.clientY > rect.top + rect.height / 2 ? "after" : "before";
+}
+
+function clearQueueDropClasses(item) {
+  item.classList.remove("drag-over-before", "drag-over-after");
+}
+
+function clearQueueDragState() {
+  state.queueDrag = {
+    queueName: null,
+    cardId: null
+  };
+
+  for (const element of document.querySelectorAll(
+    ".queue-card.dragging, .queue-card.drag-over-before, .queue-card.drag-over-after"
+  )) {
+    element.classList.remove("dragging", "drag-over-before", "drag-over-after");
+  }
+
+  for (const element of document.querySelectorAll(".queue-list.drag-ready")) {
+    element.classList.remove("drag-ready");
+  }
+}
+
+async function reorderQueuedTask(queueName, draggedCardId, targetCardId = null, placement = "after") {
+  const currentIds = getQueueIds(queueName);
+
+  if (!currentIds.includes(draggedCardId)) {
+    return;
+  }
+
+  const nextIds = currentIds.filter((id) => id !== draggedCardId);
+  let insertAt = nextIds.length;
+
+  if (targetCardId) {
+    const targetIndex = nextIds.indexOf(targetCardId);
+    if (targetIndex === -1) {
+      return;
+    }
+
+    insertAt = placement === "after" ? targetIndex + 1 : targetIndex;
+  }
+
+  nextIds.splice(insertAt, 0, draggedCardId);
+
+  if (currentIds.length === nextIds.length && currentIds.every((id, index) => id === nextIds[index])) {
+    return;
+  }
+
+  try {
+    state.settings = await window.taskWidget.reorderQueue(queueName, nextIds);
+    renderTasks();
+    setStatus(`${getQueueLabel(queueName)} reordered.`);
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
+function getQueueLabel(queueName) {
+  return queueName === "today" ? "Today Queue" : "This Week Queue";
+}
+
+function createActionButton(label, className, onClick) {
+  const button = document.createElement("button");
+  button.className = className;
+  button.type = "button";
+  button.textContent = label;
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+async function toggleQueuedTask(queueName, cardId) {
+  const queueLabel = queueName === "today" ? "Today Queue" : "This Week Queue";
+
+  try {
+    state.settings = isQueued(queueName, cardId)
+      ? await window.taskWidget.removeFromQueue(queueName, cardId)
+      : await window.taskWidget.addToQueue(queueName, cardId);
+    renderTasks();
+    setStatus(`${isQueued(queueName, cardId) ? "Added to" : "Removed from"} ${queueLabel}.`);
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
+async function removeQueuedTask(queueName, cardId) {
+  try {
+    state.settings = await window.taskWidget.removeFromQueue(queueName, cardId);
+    renderTasks();
+    setStatus(`Removed from ${getQueueLabel(queueName)}.`);
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
+async function moveQueuedTaskToToday(cardId) {
+  try {
+    state.settings = await window.taskWidget.moveBetweenQueues("week", "today", cardId);
+    renderTasks();
+    setStatus("Moved to Today Queue.");
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
+function setNextSuggestionFromToday(excludedCardId) {
+  const nextTask =
+    getQueuedTasks("today").find((task) => task.id !== excludedCardId && task.id !== state.focusTask?.id) ||
+    null;
+
+  state.nextSuggestion = nextTask;
+}
+
+function acceptNextSuggestion() {
+  if (!state.nextSuggestion) {
+    return;
+  }
+
+  setFocusTask(state.nextSuggestion);
+}
+
+function dismissNextSuggestion() {
+  state.nextSuggestion = null;
+  renderFocus(state.focusTask);
+  setStatus("Next task dismissed.");
 }
 
 function setFocusTask(task) {
@@ -370,6 +693,7 @@ function setFocusTask(task) {
   }
 
   state.focusTask = task;
+  state.nextSuggestion = null;
   resetTimer();
   renderTasks();
   setStatus(`Focused: ${task.name}`);
@@ -381,8 +705,10 @@ function clearFocus() {
     return;
   }
 
+  const clearedTaskId = state.focusTask?.id;
   state.focusTask = null;
   resetTimer();
+  setNextSuggestionFromToday(clearedTaskId);
   renderTasks();
   setStatus("Focus cleared.");
 }
@@ -510,15 +836,29 @@ function renderFocus(task) {
   elements.focusActive.classList.toggle("hidden", !task);
 
   if (!task) {
+    renderNextSuggestion();
     updateTimerDisplay();
     return;
   }
 
+  elements.nextSuggestion.classList.add("hidden");
   elements.focusTitle.textContent = task.name;
   renderMeta(elements.focusMeta, task);
   elements.focusTimeTotal.textContent =
     task.timeSpentMins === null ? "Time spent: field not found" : `Time spent: ${task.timeSpentMins} mins`;
   updateTimerDisplay();
+}
+
+function renderNextSuggestion() {
+  const task = state.nextSuggestion;
+  elements.nextSuggestion.classList.toggle("hidden", !task);
+
+  if (!task) {
+    return;
+  }
+
+  elements.nextSuggestionTitle.textContent = task.name;
+  renderMeta(elements.nextSuggestionMeta, task);
 }
 
 function renderTaskList(tasks) {
@@ -538,6 +878,18 @@ function renderTaskList(tasks) {
 
     const actions = document.createElement("div");
     actions.className = "task-actions";
+
+    const todayButton = createActionButton(
+      isQueued("today", task.id) ? "Remove Today" : "Add Today",
+      "secondary-button",
+      () => toggleQueuedTask("today", task.id)
+    );
+
+    const weekButton = createActionButton(
+      isQueued("week", task.id) ? "Remove Week" : "Add Week",
+      "secondary-button",
+      () => toggleQueuedTask("week", task.id)
+    );
 
     const completeButton = document.createElement("button");
     completeButton.className = "primary-button";
@@ -560,7 +912,7 @@ function renderTaskList(tasks) {
     openButton.textContent = "Open";
     openButton.addEventListener("click", () => openTask(task.url));
 
-    actions.append(focusButton, completeButton, openButton);
+    actions.append(todayButton, weekButton, focusButton, completeButton, openButton);
     item.append(title, meta, actions);
     elements.taskList.append(item);
   }
@@ -648,11 +1000,15 @@ async function completeTask(cardId) {
   setStatus("Marking complete...");
 
   try {
-    await window.taskWidget.completeCard(cardId);
+    const result = await window.taskWidget.completeCard(cardId);
+    if (result?.settings) {
+      state.settings = result.settings;
+    }
     state.tasks = state.tasks.filter((task) => task.id !== cardId);
     if (state.focusTask?.id === cardId) {
       state.focusTask = null;
       resetTimer();
+      setNextSuggestionFromToday(cardId);
     }
     renderTasks();
     setStatus("Marked complete.");

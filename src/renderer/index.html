@@ -100,6 +100,15 @@
             </div>
             <h2>No active task</h2>
             <p>Choose a task card when you are ready to focus.</p>
+            <div id="nextSuggestion" class="next-suggestion hidden">
+              <p class="eyebrow">Next up</p>
+              <h3 id="nextSuggestionTitle"></h3>
+              <div id="nextSuggestionMeta" class="task-meta"></div>
+              <div class="task-actions">
+                <button id="acceptNextButton" class="primary-button" type="button">Focus this</button>
+                <button id="dismissNextButton" class="secondary-button" type="button">Dismiss</button>
+              </div>
+            </div>
           </div>
 
           <div id="focusActive" class="hidden">
@@ -125,6 +134,30 @@
               <button id="clearFocusButton" class="secondary-button" type="button">Clear focus</button>
             </div>
           </div>
+        </section>
+
+        <section class="queue-section">
+          <div class="section-heading">
+            <h2>Today Queue</h2>
+            <p id="todayQueueCount">0 queued</p>
+          </div>
+          <div id="todayQueueEmpty" class="empty-state compact-empty">
+            <h3>No tasks queued for today</h3>
+            <p>Add tasks from the list below when you are ready to work on them.</p>
+          </div>
+          <div id="todayQueueList" class="queue-list"></div>
+        </section>
+
+        <section class="queue-section">
+          <div class="section-heading">
+            <h2>This Week Queue</h2>
+            <p id="weekQueueCount">0 queued</p>
+          </div>
+          <div id="weekQueueEmpty" class="empty-state compact-empty">
+            <h3>No tasks queued for this week</h3>
+            <p>Use this as a broader holding lane for work before week&apos;s end.</p>
+          </div>
+          <div id="weekQueueList" class="queue-list"></div>
         </section>
 
         <section class="task-list-section">
