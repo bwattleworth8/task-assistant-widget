@@ -373,7 +373,7 @@ select {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   width: 100%;
-  max-width: 340px;
+  max-width: 380px;
   gap: 4px;
   border: 0;
   border-radius: 20px;
@@ -1105,32 +1105,27 @@ body.theme-light .sidebar {
   opacity: 0.95;
 }
 
-.focus-icon {
-  border-radius: 50%;
+.focus-icon,
+.home-icon,
+.list-nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  color: var(--accent);
 }
 
-.focus-icon::after {
-  content: "";
-  position: absolute;
-  left: 8px;
-  top: 4px;
-  width: 4px;
-  height: 8px;
-  border-right: 2px solid var(--accent);
-  border-bottom: 2px solid var(--accent);
-  transform: rotate(35deg);
-}
-
-.today-icon::before,
-.week-icon::before,
-.no-date-icon::before {
-  content: "";
-  position: absolute;
-  left: 3px;
-  right: 3px;
-  top: 5px;
-  height: 2px;
-  background: var(--accent);
+.focus-icon svg,
+.home-icon svg,
+.list-nav-icon svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .count-badge {
@@ -1152,7 +1147,7 @@ body.theme-light .sidebar {
   background: var(--line);
 }
 
-.project-panel {
+.list-filter-panel {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1170,55 +1165,119 @@ body.theme-light .sidebar {
   text-transform: uppercase;
 }
 
-.project-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.clear-list-filters {
+  min-height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 8px;
+  color: var(--accent-strong);
+  background: rgba(169, 148, 255, 0.11);
+  font-size: 10px;
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
 }
 
-.project-item {
+.list-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.list-filter-item,
+.list-filter-empty {
   position: relative;
-  min-height: 28px;
-  padding-left: 34px;
+  min-height: 34px;
   color: var(--text);
   font-size: 14px;
   font-weight: var(--weight-medium);
-  line-height: 28px;
+  line-height: 1.3;
 }
 
-.project-item::before {
+.list-filter-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  border-radius: 9px;
+  padding: 5px 8px 5px 34px;
+  color: var(--text);
+  background: transparent;
+  text-align: left;
+}
+
+.list-filter-item:hover,
+.list-filter-item.active {
+  background: rgba(169, 148, 255, 0.12);
+}
+
+.list-filter-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-filter-count {
+  min-width: 24px;
+  border-radius: 999px;
+  padding: 4px 7px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.065);
+  font-size: 11px;
+  text-align: center;
+}
+
+.list-filter-item::before {
   content: "";
   position: absolute;
   left: 8px;
-  top: 7px;
+  top: 50%;
   width: 14px;
   height: 14px;
   border: 2px solid currentColor;
   border-radius: 5px;
+  transform: translateY(-50%);
 }
 
-.project-color-1 {
+.list-filter-item.active::after {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  width: 4px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-62%) rotate(40deg);
+}
+
+.list-filter-empty {
+  padding: 5px 8px;
+  color: var(--subtle);
+  font-size: 14px;
+  line-height: 24px;
+}
+
+.list-color-1 {
   color: #b884ff;
 }
 
-.project-color-2 {
+.list-color-2 {
   color: #62d676;
 }
 
-.project-color-3 {
+.list-color-3 {
   color: #ffbd45;
 }
 
-.project-color-4 {
+.list-color-4 {
   color: #ff6b7a;
 }
 
-.project-color-5 {
+.list-color-5 {
   color: #62d8ff;
-}
-
-.project-empty {
-  color: var(--subtle);
 }
 
 .focus-tip {
@@ -1362,12 +1421,6 @@ body.theme-light .sidebar {
 
 .settings-button {
   min-width: 118px;
-}
-
-.overflow-button {
-  min-width: 44px;
-  font-size: 18px;
-  letter-spacing: 0;
 }
 
 .status-strip {
@@ -1697,7 +1750,8 @@ label,
 .eyebrow,
 .sidebar-section-heading,
 .sidebar-link,
-.project-item,
+.list-filter-item,
+.list-filter-empty,
 .count-badge,
 .icon-button,
 .primary-button,

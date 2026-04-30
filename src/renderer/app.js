@@ -3,6 +3,7 @@ const state = {
   tasks: [],
   activeFilter: "all",
   workspaceView: "dashboard",
+  selectedListIds: new Set(),
   focusTask: null,
   nextSuggestion: null,
   timer: {
@@ -21,12 +22,12 @@ const state = {
 
 const FOCUS_NOTES_STORAGE_KEY = "trello-focus-widget:focus-notes";
 const FOCUS_NOTES_MAX_LENGTH = 1000;
+const DUE_SOON_DAYS = 3;
 
 const elements = {
   setupPanel: document.querySelector("#setupPanel"),
   settingsForm: document.querySelector("#settingsForm"),
   settingsButton: document.querySelector("#settingsButton"),
-  hideButton: document.querySelector("#hideButton"),
   topModeButton: document.querySelector("#topModeButton"),
   modeButtons: [...document.querySelectorAll("[data-view-mode]")],
   themeButtons: [...document.querySelectorAll("[data-theme-toggle]")],
@@ -70,8 +71,11 @@ const elements = {
   sidebarTodayCount: document.querySelector("#sidebarTodayCount"),
   sidebarWeekCount: document.querySelector("#sidebarWeekCount"),
   sidebarAllTasksCount: document.querySelector("#sidebarAllTasksCount"),
-  sidebarProjectList: document.querySelector("#sidebarProjectList"),
+  sidebarListFilter: document.querySelector("#sidebarListFilter"),
+  clearListFiltersButton: document.querySelector("#clearListFiltersButton"),
   sidebarLinks: [...document.querySelectorAll(".sidebar-link")],
+  workspaceTitle: document.querySelector("#workspaceTitle"),
+  workspaceSubtitle: document.querySelector("#workspaceSubtitle"),
   taskCount: document.querySelector("#taskCount"),
   taskListTitle: document.querySelector("#taskListTitle"),
   emptyState: document.querySelector("#emptyState"),
@@ -99,7 +103,6 @@ async function init() {
 
 function bindEvents() {
   elements.settingsButton.addEventListener("click", () => showSetup(!isSetupVisible()));
-  elements.hideButton.addEventListener("click", () => window.taskWidget.hide());
   elements.fetchBoardsButton.addEventListener("click", fetchBoards);
   elements.settingsForm.addEventListener("submit", saveSettings);
   elements.refreshButton.addEventListener("click", loadTasks);
@@ -113,6 +116,7 @@ function bindEvents() {
   elements.focusNotesInput.addEventListener("input", handleFocusNotesInput);
   elements.acceptNextButton.addEventListener("click", acceptNextSuggestion);
   elements.dismissNextButton.addEventListener("click", dismissNextSuggestion);
+  elements.clearListFiltersButton.addEventListener("click", clearListFilters);
 
   for (const button of elements.modeButtons) {
     button.addEventListener("click", () => setViewMode(button.dataset.viewMode));
@@ -378,6 +382,7 @@ function scheduleRefresh() {
 
 function renderTasks() {
   applyWorkspaceViewClass();
+  reconcileSelectedListFilters();
 
   for (const button of elements.filterButtons) {
     button.classList.toggle("active", button.dataset.filter === state.activeFilter);
@@ -390,6 +395,7 @@ function renderTasks() {
   renderQueues();
   renderTaskList(tasks);
   renderSidebar();
+  renderWorkspaceHeader();
 
   elements.taskCount.textContent = String(tasks.length);
   elements.taskListTitle.textContent = getTaskListTitle();
@@ -397,8 +403,51 @@ function renderTasks() {
   elements.boardName.textContent = state.settings?.boardName || "";
 }
 
+function renderWorkspaceHeader() {
+  const copy = {
+    dashboard: {
+      title: "Home",
+      subtitle: "Plan today, shape the week, and choose your next focus."
+    },
+    today: {
+      title: "Today",
+      subtitle: "Keep the day small enough to actually finish."
+    },
+    week: {
+      title: "This Week",
+      subtitle: "Shape the work before it becomes noise."
+    },
+    all: {
+      title: "All Tasks",
+      subtitle: "Review available Trello cards and pull the right ones forward."
+    },
+    focus: {
+      title: "Focus",
+      subtitle: "Stay with the active task."
+    }
+  };
+  const current = copy[state.workspaceView] || copy.dashboard;
+
+  elements.workspaceTitle.textContent = current.title;
+  elements.workspaceSubtitle.textContent = current.subtitle;
+}
+
 function applyWorkspaceViewClass() {
   document.body.dataset.workspaceView = state.workspaceView;
+}
+
+function reconcileSelectedListFilters() {
+  if (state.selectedListIds.size === 0) {
+    return;
+  }
+
+  const activeListIds = new Set(state.tasks.map((task) => task.listId).filter(Boolean));
+
+  for (const listId of [...state.selectedListIds]) {
+    if (!activeListIds.has(listId)) {
+      state.selectedListIds.delete(listId);
+    }
+  }
 }
 
 async function handleSidebarLink(link) {
@@ -477,13 +526,17 @@ function getQueuedTasks(queueName) {
   return getQueueIds(queueName).map(getTaskById).filter(Boolean);
 }
 
+function getVisibleQueuedTasks(queueName) {
+  return applySelectedListFilter(getQueuedTasks(queueName));
+}
+
 function renderQueues() {
   renderQueue("today", elements.todayQueueList, elements.todayQueueEmpty, elements.todayQueueCount);
   renderQueue("week", elements.weekQueueList, elements.weekQueueEmpty, elements.weekQueueCount);
 }
 
 function renderQueue(queueName, listElement, emptyElement, countElement) {
-  const tasks = getQueuedTasks(queueName);
+  const tasks = getVisibleQueuedTasks(queueName);
   listElement.innerHTML = "";
   listElement.ondragover = (event) => handleQueueListDragOver(event, queueName, listElement);
   listElement.ondragleave = (event) => handleQueueListDragLeave(event, listElement);
@@ -687,9 +740,9 @@ function getQueueLabel(queueName) {
 }
 
 function renderSidebar() {
-  const todayCount = getQueuedTasks("today").length;
-  const weekCount = getQueuedTasks("week").length;
-  const allTasksCount = getAvailableTasks().length;
+  const todayCount = getVisibleQueuedTasks("today").length;
+  const weekCount = getVisibleQueuedTasks("week").length;
+  const allTasksCount = getVisibleAvailableTasks().length;
 
   elements.sidebarTodayCount.textContent = String(todayCount);
   elements.sidebarWeekCount.textContent = String(weekCount);
@@ -699,7 +752,7 @@ function renderSidebar() {
     link.classList.toggle("active", link.dataset.workspace === state.workspaceView);
   }
 
-  renderProjectList();
+  renderListFilters();
 }
 
 function getWorkspaceViewLabel(workspaceView) {
@@ -715,47 +768,97 @@ function getWorkspaceViewLabel(workspaceView) {
     return "All Tasks";
   }
 
+  if (workspaceView === "dashboard") {
+    return "Home";
+  }
+
   return "Focus";
 }
 
-function renderProjectList() {
-  elements.sidebarProjectList.innerHTML = "";
+function renderListFilters() {
+  elements.sidebarListFilter.innerHTML = "";
+  elements.clearListFiltersButton.classList.toggle("hidden", state.selectedListIds.size === 0);
 
-  const projects = getSidebarProjects();
-  for (const [index, project] of projects.entries()) {
-    const item = document.createElement("div");
-    item.className = `project-item project-color-${(index % 5) + 1}`;
-    item.textContent = project;
-    elements.sidebarProjectList.append(item);
+  const lists = getSidebarLists();
+  for (const [index, list] of lists.entries()) {
+    const item = document.createElement("button");
+    item.className = `list-filter-item list-color-${(index % 5) + 1}`;
+    item.type = "button";
+    item.setAttribute("aria-pressed", String(state.selectedListIds.has(list.id)));
+    item.classList.toggle("active", state.selectedListIds.has(list.id));
+    item.addEventListener("click", () => toggleListFilter(list.id, list.name));
+
+    const name = document.createElement("span");
+    name.className = "list-filter-name";
+    name.textContent = list.name;
+
+    const count = document.createElement("span");
+    count.className = "list-filter-count";
+    count.textContent = String(list.count);
+
+    item.append(name, count);
+    elements.sidebarListFilter.append(item);
   }
 
-  if (projects.length === 0) {
+  if (lists.length === 0) {
     const empty = document.createElement("div");
-    empty.className = "project-item project-empty";
-    empty.textContent = "No projects yet";
-    elements.sidebarProjectList.append(empty);
+    empty.className = "list-filter-empty";
+    empty.textContent = "No lists yet";
+    elements.sidebarListFilter.append(empty);
   }
 }
 
-function getSidebarProjects() {
-  const names = new Set();
+function getSidebarLists() {
+  const listsById = new Map();
 
   for (const task of state.tasks) {
-    if (task.listName) {
-      names.add(task.listName);
+    if (!task.listId || !task.listName) {
+      continue;
     }
 
-    for (const label of task.labels || []) {
-      names.add(label.name);
+    const current = listsById.get(task.listId);
+    if (current) {
+      current.count += 1;
+    } else {
+      listsById.set(task.listId, {
+        id: task.listId,
+        name: task.listName,
+        count: 1
+      });
     }
   }
 
-  return [...names].filter(Boolean).sort((a, b) => a.localeCompare(b)).slice(0, 7);
+  return [...listsById.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function toggleListFilter(listId, listName) {
+  if (state.selectedListIds.has(listId)) {
+    state.selectedListIds.delete(listId);
+  } else {
+    state.selectedListIds.add(listId);
+  }
+
+  renderTasks();
+  setStatus(
+    state.selectedListIds.has(listId)
+      ? `Filtering to ${listName}.`
+      : `${listName} filter removed.`
+  );
+}
+
+function clearListFilters() {
+  if (state.selectedListIds.size === 0) {
+    return;
+  }
+
+  state.selectedListIds.clear();
+  renderTasks();
+  setStatus("Showing all lists.");
 }
 
 function getTaskListTitle() {
-  if (state.activeFilter === "due") {
-    return "Due";
+  if (state.activeFilter === "due-soon") {
+    return "Due Soon";
   }
 
   if (state.activeFilter === "overdue") {
@@ -964,14 +1067,14 @@ function updateTimerDisplay() {
 }
 
 function getFilteredTasks() {
-  const tasks = getAvailableTasks();
+  const tasks = getVisibleAvailableTasks();
 
   if (state.activeFilter === "all") {
     return tasks;
   }
 
-  if (state.activeFilter === "due") {
-    return tasks.filter((task) => task.due);
+  if (state.activeFilter === "due-soon") {
+    return tasks.filter(isDueSoon);
   }
 
   if (state.activeFilter === "overdue") {
@@ -979,6 +1082,10 @@ function getFilteredTasks() {
   }
 
   return tasks.filter((task) => !task.due);
+}
+
+function getVisibleAvailableTasks() {
+  return applySelectedListFilter(getAvailableTasks());
 }
 
 function getAvailableTasks() {
@@ -989,6 +1096,31 @@ function getAvailableTasks() {
   ]);
 
   return state.tasks.filter((task) => !plannedTaskIds.has(task.id));
+}
+
+function applySelectedListFilter(tasks) {
+  if (state.selectedListIds.size === 0) {
+    return tasks;
+  }
+
+  return tasks.filter((task) => state.selectedListIds.has(task.listId));
+}
+
+function isDueSoon(task) {
+  if (!task.due) {
+    return false;
+  }
+
+  const dueDate = new Date(task.due);
+  if (Number.isNaN(dueDate.getTime())) {
+    return false;
+  }
+
+  const now = new Date();
+  const dueSoonLimit = new Date(now);
+  dueSoonLimit.setDate(now.getDate() + DUE_SOON_DAYS);
+
+  return dueDate >= now && dueDate <= dueSoonLimit;
 }
 
 function renderFocus(task) {

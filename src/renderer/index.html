@@ -23,22 +23,67 @@
         </div>
 
         <nav class="sidebar-nav" aria-label="Primary">
-          <button class="sidebar-link active" type="button" data-workspace="focus">
-            <span class="nav-icon focus-icon" aria-hidden="true"></span>
+          <button class="sidebar-link active" type="button" data-workspace="dashboard">
+            <span class="nav-icon home-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M3 10.9 12 3.7l9 7.2" />
+                <path d="M5 10.2V20h14v-9.8" />
+                <path d="M10 20v-6h4v6" />
+              </svg>
+            </span>
+            <span>Home</span>
+          </button>
+          <button class="sidebar-link" type="button" data-workspace="focus">
+            <span class="nav-icon focus-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M4 8V6a2 2 0 0 1 2-2h2" />
+                <path d="M16 4h2a2 2 0 0 1 2 2v2" />
+                <path d="M20 16v2a2 2 0 0 1-2 2h-2" />
+                <path d="M8 20H6a2 2 0 0 1-2-2v-2" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </span>
             <span>Focus</span>
           </button>
           <button class="sidebar-link" type="button" data-workspace="today">
-            <span class="nav-icon today-icon" aria-hidden="true"></span>
+            <span class="nav-icon list-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M8 6h13" />
+                <path d="M8 12h13" />
+                <path d="M8 18h13" />
+                <path d="M3 6h.01" />
+                <path d="M3 12h.01" />
+                <path d="M3 18h.01" />
+              </svg>
+            </span>
             <span>Today</span>
             <span id="sidebarTodayCount" class="count-badge">0</span>
           </button>
           <button class="sidebar-link" type="button" data-workspace="week">
-            <span class="nav-icon week-icon" aria-hidden="true"></span>
+            <span class="nav-icon list-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M8 6h13" />
+                <path d="M8 12h13" />
+                <path d="M8 18h13" />
+                <path d="M3 6h.01" />
+                <path d="M3 12h.01" />
+                <path d="M3 18h.01" />
+              </svg>
+            </span>
             <span>This Week</span>
             <span id="sidebarWeekCount" class="count-badge">0</span>
           </button>
           <button class="sidebar-link" type="button" data-filter="all" data-workspace="all">
-            <span class="nav-icon no-date-icon" aria-hidden="true"></span>
+            <span class="nav-icon list-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M8 6h13" />
+                <path d="M8 12h13" />
+                <path d="M8 18h13" />
+                <path d="M3 6h.01" />
+                <path d="M3 12h.01" />
+                <path d="M3 18h.01" />
+              </svg>
+            </span>
             <span>All Tasks</span>
             <span id="sidebarAllTasksCount" class="count-badge">0</span>
           </button>
@@ -46,12 +91,12 @@
 
         <div class="sidebar-divider"></div>
 
-        <section class="project-panel" aria-label="Projects">
+        <section class="list-filter-panel" aria-label="Lists">
           <div class="sidebar-section-heading">
-            <span>Projects</span>
-            <span aria-hidden="true">+</span>
+            <span>Lists</span>
+            <button id="clearListFiltersButton" class="clear-list-filters hidden" type="button">All</button>
           </div>
-          <div id="sidebarProjectList" class="project-list"></div>
+          <div id="sidebarListFilter" class="list-filter"></div>
         </section>
 
         <section class="focus-tip" aria-label="Focus tip">
@@ -68,8 +113,8 @@
       <div class="workspace">
         <header class="titlebar">
           <div>
-            <h2>Focus</h2>
-            <p>Stay focused. Get things done.</p>
+            <h2 id="workspaceTitle">Home</h2>
+            <p id="workspaceSubtitle">Plan today, shape the week, and choose your next focus.</p>
           </div>
           <div class="window-actions">
             <button id="topModeButton" class="secondary-button mode-button compact-mode-button top-mode-button" type="button" data-view-mode="focus" title="Focus mode" aria-label="Focus mode">Focus Mode</button>
@@ -77,7 +122,6 @@
               <span class="sr-only">Switch theme</span>
             </button>
             <button id="settingsButton" class="icon-button settings-button" type="button" title="Settings" aria-label="Settings">Settings</button>
-            <button id="hideButton" class="icon-button overflow-button" type="button" title="Hide to taskbar" aria-label="Hide to taskbar">...</button>
           </div>
         </header>
 
@@ -216,7 +260,7 @@
           <section class="toolbar" aria-label="Task controls">
             <div class="segmented-control" role="tablist" aria-label="Task filter">
               <button class="filter-button active" type="button" data-filter="all">All</button>
-              <button class="filter-button" type="button" data-filter="due">Due</button>
+              <button class="filter-button" type="button" data-filter="due-soon">Due Soon</button>
               <button class="filter-button" type="button" data-filter="overdue">Overdue</button>
               <button class="filter-button" type="button" data-filter="none">No date</button>
             </div>

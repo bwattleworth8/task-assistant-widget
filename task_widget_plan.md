@@ -64,8 +64,16 @@ Build a local Windows desktop widget that helps plan, organize, and focus on Tre
 - Updated typography:
   - Primary UI: Inter.
   - Headings/accent: Satoshi.
-  - Timer: JetBrains Mono with tabular numbers.
+- Timer: JetBrains Mono with tabular numbers.
 - Added light/dark theme support.
+
+### Planning Navigation And Filters
+
+- Added Home navigation that returns to the full planning dashboard.
+- Removed the redundant overflow hide button from the top app controls.
+- Renamed the sidebar Projects area to Lists.
+- Made Lists selectable as local multi-select filters for the planning panes.
+- Replaced the broad Due filter with Due Soon for tasks due within the next 3 days.
 
 ## Current Focus Mode Direction
 
@@ -102,14 +110,6 @@ Notes are local-only in this milestone. They are stored by Trello card ID in bro
 5. **Status Adjuster:** update task status from the widget, likely through list moves, labels, or custom fields.
 6. **Quick Add:** create a new Trello card from a configured template.
 7. **Checklist / Definition Of Done:** show checklist progress in Focus Mode.
-
-## Planning UI Follow-Up Notes
-
-- **Remove overflow hide button:** remove the `...` button in the top-right app controls. It currently minimizes/hides the window, but this is redundant with the native window minimize control.
-- **Add Home navigation:** add a **Home** item at the top of the left navigation with a sleek modern house icon. Home should return the user to the main dashboard view where Focus, Today, This Week, and All Tasks panes are all visible.
-- **Rename Projects to Lists:** the current Projects section looks good visually, but it does not have a function yet. Rename it to **Lists** so it maps clearly to Trello lists.
-- **Make Lists functional:** each item in the Lists section should be selectable with a checkbox-style active state. Selected lists should filter the panes on the right so only cards from those Trello lists are shown. Multiple selected lists should be allowed.
-- **Clarify due filtering:** replace the current **Due** filter with **Due Soon**. Due Soon should include tasks with a due date in the next 3 days. Keep **All** and **Overdue** as currently understood.
 
 ## Test Plan
 

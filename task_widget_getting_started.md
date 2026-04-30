@@ -45,9 +45,10 @@ The app helps with three related workflows:
 ### Plan Mode
 
 - Full dashboard view.
-- Sidebar navigation for Focus, Today, This Week, and All Tasks.
+- Sidebar navigation for Home, Focus, Today, This Week, and All Tasks.
+- Selectable Lists filters that narrow the visible planning panes to chosen Trello lists.
 - Settings, refresh, pin-on-top, and theme controls.
-- Filter controls for all, due, overdue, and no due date.
+- Filter controls for all, due soon, overdue, and no due date.
 - Local Today Queue and This Week Queue.
 - Drag-and-drop queue ordering.
 - Move This Week tasks into Today.
