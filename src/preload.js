@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld("taskWidget", {
   saveCredentials: (credentials) => ipcRenderer.invoke("credentials:save", credentials),
   getBoards: (credentials) => ipcRenderer.invoke("trello:boards", credentials),
   getCards: () => ipcRenderer.invoke("trello:cards"),
+  getQuickAddOptions: (payload) => ipcRenderer.invoke("trello:quickAddOptions", payload),
+  quickAddCard: (payload) => ipcRenderer.invoke("trello:quickAddCard", payload),
   completeCard: (cardId) => ipcRenderer.invoke("trello:complete", cardId),
   addTimeSpent: (cardId, minutes) => ipcRenderer.invoke("trello:addTimeSpent", cardId, minutes),
   addComment: (cardId, text) => ipcRenderer.invoke("trello:addComment", cardId, text),

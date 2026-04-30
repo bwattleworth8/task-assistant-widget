@@ -98,6 +98,92 @@ class TrelloClient {
       .sort(compareCards);
   }
 
+  async getBoardLists(boardId) {
+    if (!boardId) {
+      throw new Error("Choose a Trello board before loading lists.");
+    }
+
+    const lists = await this.request(`/boards/${boardId}/lists`, {
+      query: {
+        filter: "open",
+        fields: "id,name,pos"
+      }
+    });
+
+    return lists
+      .filter((list) => !isCompletedListName(list.name))
+      .map((list) => ({
+        id: list.id,
+        name: list.name,
+        pos: list.pos
+      }))
+      .sort((a, b) => Number(a.pos || 0) - Number(b.pos || 0));
+  }
+
+  async getBoardTemplateCards(boardId) {
+    if (!boardId) {
+      throw new Error("Choose a Trello board before loading template cards.");
+    }
+
+    const cards = await this.request(`/boards/${boardId}/cards`, {
+      query: {
+        filter: "open",
+        fields: "id,name,url,idList,isTemplate,cover"
+      }
+    });
+
+    return cards
+      .filter(isTemplateCard)
+      .map((card) => ({
+        id: card.id,
+        name: card.name,
+        url: card.url,
+        listId: card.idList
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async getBoardLabels(boardId) {
+    if (!boardId) {
+      throw new Error("Choose a Trello board before loading labels.");
+    }
+
+    const labels = await this.request(`/boards/${boardId}/labels`, {
+      query: {
+        fields: "id,name,color"
+      }
+    });
+
+    return labels
+      .map((label) => ({
+        id: label.id,
+        name: label.name || formatLabelColor(label.color),
+        color: label.color || "gray"
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async getBoardMembers(boardId) {
+    if (!boardId) {
+      throw new Error("Choose a Trello board before loading members.");
+    }
+
+    const members = await this.request(`/boards/${boardId}/members`, {
+      query: {
+        filter: "all",
+        fields: "id,fullName,username"
+      }
+    });
+
+    return members
+      .map((member) => ({
+        id: member.id,
+        name: member.fullName || member.username || "Unnamed member",
+        username: member.username || ""
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   async getBoardCustomFields(boardId) {
     if (!boardId) {
       throw new Error("Choose a Trello board before loading custom fields.");
@@ -191,6 +277,61 @@ class TrelloClient {
       }
     });
   }
+
+  async createCardFromTemplate(boardId, sourceCardId, listId, name, options = {}) {
+    if (!boardId) {
+      throw new Error("Choose a Trello board before creating tasks.");
+    }
+
+    if (!sourceCardId) {
+      throw new Error("Choose a Quick Add template in Settings.");
+    }
+
+    if (!listId) {
+      throw new Error("Choose a destination list.");
+    }
+
+    const cardName = String(name || "").trim();
+    if (!cardName) {
+      throw new Error("Enter a task title.");
+    }
+
+    const labelId = String(options.labelId || "").trim();
+    const memberId = String(options.memberId || "").trim();
+    const due = normalizeDueDateForTrello(options.dueDate);
+    const start = getCurrentStartDateForTrello();
+    const card = await this.request("/cards", {
+      method: "POST",
+      query: {
+        idList: listId,
+        idCardSource: sourceCardId,
+        keepFromSource: "all",
+        name: cardName,
+        ...(labelId ? { idLabels: labelId } : {}),
+        ...(memberId ? { idMembers: memberId } : {}),
+        ...(due ? { due } : {}),
+        start,
+        fields: "id,name,url,idList,due,start,dueComplete,dateLastActivity,labels"
+      }
+    });
+
+    return {
+      id: card.id,
+      name: card.name,
+      url: card.url,
+      listId: card.idList,
+      due: card.due || null,
+      start: card.start || start,
+      dueComplete: Boolean(card.dueComplete),
+      lastActivity: card.dateLastActivity,
+      labels: (card.labels || []).map((label) => ({
+        id: label.id,
+        name: label.name || formatLabelColor(label.color),
+        color: label.color || "gray"
+      })),
+      status: getDueStatus(card.due)
+    };
+  }
 }
 
 function normalizeCard(card, listName, timeSpentField) {
@@ -246,6 +387,44 @@ function getCardTimeSpent(card, timeSpentField) {
 
 function normalizeFieldName(name) {
   return String(name || "").trim().toLowerCase();
+}
+
+function formatLabelColor(color) {
+  const normalizedColor = String(color || "").trim();
+  if (!normalizedColor) {
+    return "Unnamed label";
+  }
+
+  return `${normalizedColor.charAt(0).toUpperCase()}${normalizedColor.slice(1)} label`;
+}
+
+function normalizeDueDateForTrello(dueDate) {
+  const normalizedDueDate = String(dueDate || "").trim();
+  if (!normalizedDueDate) {
+    return "";
+  }
+
+  const match = normalizedDueDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    throw new Error("Choose a valid due date.");
+  }
+
+  const [, year, month, day] = match.map(Number);
+  const due = new Date(year, month - 1, day, 12, 0, 0);
+  if (
+    due.getFullYear() !== year ||
+    due.getMonth() !== month - 1 ||
+    due.getDate() !== day
+  ) {
+    throw new Error("Choose a valid due date.");
+  }
+
+  return due.toISOString();
+}
+
+function getCurrentStartDateForTrello() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0).toISOString();
 }
 
 function getDueStatus(due) {

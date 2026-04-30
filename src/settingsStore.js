@@ -27,6 +27,10 @@ const DEFAULT_SETTINGS = {
     today: [],
     week: []
   },
+  quickAdd: {
+    templateCardId: "",
+    templateCardName: ""
+  },
   boardId: "",
   boardName: "",
   encryptedCredentials: null,
@@ -71,7 +75,8 @@ function loadSettings() {
     queues: {
       today: sanitizeQueueIds(stored.queues?.today),
       week: sanitizeQueueIds(stored.queues?.week)
-    }
+    },
+    quickAdd: sanitizeQuickAddSettings(stored.quickAdd)
   };
 }
 
@@ -91,7 +96,11 @@ function saveSettings(nextSettings) {
     queues: {
       ...current.queues,
       ...(nextSettings.queues || {})
-    }
+    },
+    quickAdd: sanitizeQuickAddSettings({
+      ...current.quickAdd,
+      ...(nextSettings.quickAdd || {})
+    })
   };
 
   writeJson(getSettingsPath(), merged);
@@ -104,6 +113,13 @@ function sanitizeQueueIds(ids) {
   }
 
   return [...new Set(ids.map((id) => String(id || "").trim()).filter(Boolean))];
+}
+
+function sanitizeQuickAddSettings(quickAdd) {
+  return {
+    templateCardId: String(quickAdd?.templateCardId || "").trim(),
+    templateCardName: String(quickAdd?.templateCardName || "").trim()
+  };
 }
 
 function encryptCredentials(credentials) {
@@ -169,6 +185,7 @@ function getPublicSettings() {
     theme: settings.theme,
     refreshMinutes: settings.refreshMinutes,
     queues: settings.queues,
+    quickAdd: settings.quickAdd,
     boardId: settings.boardId,
     boardName: settings.boardName,
     hasCredentials: Boolean(credentials?.apiKey && credentials?.token),

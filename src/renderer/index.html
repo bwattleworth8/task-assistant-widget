@@ -179,6 +179,16 @@
                 </select>
               </label>
 
+              <label>
+                <span>Quick Add template</span>
+                <select id="quickAddTemplateSelect"></select>
+                <span class="field-hint">Save the board first, then choose the Trello template card to copy.</span>
+              </label>
+
+              <div class="form-row">
+                <button id="refreshQuickAddOptionsButton" class="secondary-button" type="button">Refresh Quick Add options</button>
+              </div>
+
               <button class="primary-button" type="submit">Save settings</button>
             </form>
           </section>
@@ -279,6 +289,7 @@
             </div>
 
             <div class="toolbar-actions">
+              <button id="quickAddButton" class="primary-button" type="button">Create Task</button>
               <label class="toggle">
                 <input id="topToggle" type="checkbox" />
                 <span>Pin on top</span>
@@ -327,6 +338,61 @@
         </main>
       </div>
     </div>
+
+    <dialog id="quickAddDialog" class="app-dialog">
+      <form id="quickAddForm" class="dialog-form">
+        <div class="dialog-heading">
+          <h2>Quick Add</h2>
+          <p>Create a task from the configured template.</p>
+        </div>
+
+        <label>
+          <span>Task title</span>
+          <input id="quickAddTitleInput" type="text" autocomplete="off" />
+        </label>
+
+        <label>
+          <span>Destination list</span>
+          <select id="quickAddListSelect"></select>
+        </label>
+
+        <label>
+          <span>Label</span>
+          <select id="quickAddLabelSelect"></select>
+        </label>
+
+        <label>
+          <span>Due date</span>
+          <input id="quickAddDueDateInput" type="date" />
+        </label>
+
+        <label>
+          <span>Assignee</span>
+          <select id="quickAddMemberSelect"></select>
+        </label>
+
+        <div class="dialog-actions">
+          <button id="quickAddCancelButton" class="secondary-button" type="button">Cancel</button>
+          <button id="quickAddCreateButton" class="primary-button" type="submit">Create</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="quickAddRouteDialog" class="app-dialog">
+      <div class="dialog-form">
+        <div class="dialog-heading">
+          <h2>What do you want to do with this task?</h2>
+          <p id="quickAddRouteTitle" class="quick-add-route-title"></p>
+        </div>
+
+        <div class="route-actions">
+          <button id="quickAddRouteFocusButton" class="primary-button" type="button">Focus</button>
+          <button id="quickAddRouteTodayButton" class="secondary-button" type="button">Today</button>
+          <button id="quickAddRouteWeekButton" class="secondary-button" type="button">This Week</button>
+          <button id="quickAddRouteAllButton" class="secondary-button" type="button">All Tasks</button>
+        </div>
+      </div>
+    </dialog>
 
     <script src="./app.js"></script>
   </body>

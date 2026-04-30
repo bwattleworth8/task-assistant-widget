@@ -462,10 +462,17 @@ function registerIpcHandlers() {
   ipcMain.handle("settings:get", () => getPublicSettings());
 
   ipcMain.handle("settings:save", (_event, settings) => {
+    const nextSettings = settings || {};
+    const quickAddTemplateCardId = String(nextSettings.quickAdd?.templateCardId || "").trim();
+    const quickAddTemplateCardName = String(nextSettings.quickAdd?.templateCardName || "").trim();
     const saved = saveSettings({
-      boardId: settings.boardId || "",
-      boardName: settings.boardName || "",
-      refreshMinutes: Number(settings.refreshMinutes) || 5
+      boardId: nextSettings.boardId || "",
+      boardName: nextSettings.boardName || "",
+      refreshMinutes: Number(nextSettings.refreshMinutes) || 5,
+      quickAdd: {
+        templateCardId: quickAddTemplateCardId,
+        templateCardName: quickAddTemplateCardName
+      }
     });
 
     return {
@@ -502,6 +509,46 @@ function registerIpcHandlers() {
     const settings = loadSettings();
     const client = getConfiguredClient();
     return client.getBoardCards(settings.boardId);
+  });
+
+  ipcMain.handle("trello:quickAddOptions", async (_event, payload) => {
+    const settings = loadSettings();
+    const boardId = String(payload?.boardId || settings.boardId || "").trim();
+    const client = payload?.credentials
+      ? new TrelloClient({
+          apiKey: String(payload.credentials.apiKey || "").trim(),
+          token: String(payload.credentials.token || "").trim()
+        })
+      : getConfiguredClient();
+    const [lists, templates, labels, members] = await Promise.all([
+      client.getBoardLists(boardId),
+      client.getBoardTemplateCards(boardId),
+      client.getBoardLabels(boardId),
+      client.getBoardMembers(boardId)
+    ]);
+
+    return {
+      lists,
+      templates,
+      labels,
+      members
+    };
+  });
+
+  ipcMain.handle("trello:quickAddCard", async (_event, payload) => {
+    const settings = loadSettings();
+    const client = getConfiguredClient();
+    return client.createCardFromTemplate(
+      settings.boardId,
+      settings.quickAdd?.templateCardId,
+      String(payload?.listId || "").trim(),
+      payload?.name,
+      {
+        labelId: payload?.labelId,
+        dueDate: payload?.dueDate,
+        memberId: payload?.memberId
+      }
+    );
   });
 
   ipcMain.handle("trello:complete", async (_event, cardId) => {

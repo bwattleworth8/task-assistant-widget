@@ -14,6 +14,14 @@ const state = {
   },
   refreshTimer: null,
   knownBoards: [],
+  quickAddOptions: {
+    lists: [],
+    templates: [],
+    labels: [],
+    members: []
+  },
+  quickAddOptionsBoardId: "",
+  pendingQuickAddTask: null,
   queueDrag: {
     queueName: null,
     cardId: null
@@ -40,8 +48,11 @@ const elements = {
   fetchBoardsButton: document.querySelector("#fetchBoardsButton"),
   boardSelect: document.querySelector("#boardSelect"),
   refreshSelect: document.querySelector("#refreshSelect"),
+  quickAddTemplateSelect: document.querySelector("#quickAddTemplateSelect"),
+  refreshQuickAddOptionsButton: document.querySelector("#refreshQuickAddOptionsButton"),
   securityStatus: document.querySelector("#securityStatus"),
   topToggle: document.querySelector("#topToggle"),
+  quickAddButton: document.querySelector("#quickAddButton"),
   refreshButton: document.querySelector("#refreshButton"),
   statusText: document.querySelector("#statusText"),
   boardName: document.querySelector("#boardName"),
@@ -89,7 +100,22 @@ const elements = {
   taskCount: document.querySelector("#taskCount"),
   taskListTitle: document.querySelector("#taskListTitle"),
   emptyState: document.querySelector("#emptyState"),
-  taskList: document.querySelector("#taskList")
+  taskList: document.querySelector("#taskList"),
+  quickAddDialog: document.querySelector("#quickAddDialog"),
+  quickAddForm: document.querySelector("#quickAddForm"),
+  quickAddTitleInput: document.querySelector("#quickAddTitleInput"),
+  quickAddListSelect: document.querySelector("#quickAddListSelect"),
+  quickAddLabelSelect: document.querySelector("#quickAddLabelSelect"),
+  quickAddDueDateInput: document.querySelector("#quickAddDueDateInput"),
+  quickAddMemberSelect: document.querySelector("#quickAddMemberSelect"),
+  quickAddCancelButton: document.querySelector("#quickAddCancelButton"),
+  quickAddCreateButton: document.querySelector("#quickAddCreateButton"),
+  quickAddRouteDialog: document.querySelector("#quickAddRouteDialog"),
+  quickAddRouteTitle: document.querySelector("#quickAddRouteTitle"),
+  quickAddRouteFocusButton: document.querySelector("#quickAddRouteFocusButton"),
+  quickAddRouteTodayButton: document.querySelector("#quickAddRouteTodayButton"),
+  quickAddRouteWeekButton: document.querySelector("#quickAddRouteWeekButton"),
+  quickAddRouteAllButton: document.querySelector("#quickAddRouteAllButton")
 };
 
 async function init() {
@@ -108,6 +134,7 @@ async function init() {
   }
 
   await loadTasks();
+  await loadQuickAddOptions();
   scheduleRefresh();
 }
 
@@ -115,6 +142,16 @@ function bindEvents() {
   elements.settingsButton.addEventListener("click", () => showSetup(!isSetupVisible()));
   elements.fetchBoardsButton.addEventListener("click", fetchBoards);
   elements.settingsForm.addEventListener("submit", saveSettings);
+  elements.refreshQuickAddOptionsButton.addEventListener("click", () =>
+    loadQuickAddOptions({ showStatus: true, boardId: elements.boardSelect.value })
+  );
+  elements.quickAddButton.addEventListener("click", openQuickAdd);
+  elements.quickAddForm.addEventListener("submit", submitQuickAdd);
+  elements.quickAddCancelButton.addEventListener("click", () => closeDialog(elements.quickAddDialog));
+  elements.quickAddRouteFocusButton.addEventListener("click", () => routeQuickAddTask("focus"));
+  elements.quickAddRouteTodayButton.addEventListener("click", () => routeQuickAddTask("today"));
+  elements.quickAddRouteWeekButton.addEventListener("click", () => routeQuickAddTask("week"));
+  elements.quickAddRouteAllButton.addEventListener("click", () => routeQuickAddTask("all"));
   elements.refreshButton.addEventListener("click", loadTasks);
   elements.topToggle.addEventListener("change", toggleAlwaysOnTop);
   elements.startTimerButton.addEventListener("click", startFocusTimer);
@@ -183,6 +220,10 @@ function syncSettingsUi() {
   applyViewModeClass(state.settings.viewMode);
   applyThemeClass(state.settings.theme);
   hydrateBoardSelect();
+  hydrateQuickAddTemplateSelect();
+  hydrateQuickAddListSelect();
+  hydrateQuickAddLabelSelect();
+  hydrateQuickAddMemberSelect();
 }
 
 function applyViewModeClass(viewMode) {
@@ -311,12 +352,423 @@ function hydrateBoardSelect() {
   }
 }
 
+async function loadQuickAddOptions({ showStatus = false, boardId } = {}) {
+  const selectedBoardId = String(boardId || state.settings?.boardId || "").trim();
+  const apiKey = elements.apiKeyInput.value.trim();
+  const token = elements.tokenInput.value.trim();
+  const credentials = apiKey && token ? { apiKey, token } : null;
+  const hasLookupCredentials = Boolean(credentials || state.settings?.hasCredentials);
+
+  if (!hasLookupCredentials || !selectedBoardId) {
+    state.quickAddOptions = {
+      lists: [],
+      templates: [],
+      labels: [],
+      members: []
+    };
+    state.quickAddOptionsBoardId = "";
+    hydrateQuickAddTemplateSelect();
+    hydrateQuickAddListSelect();
+    hydrateQuickAddLabelSelect();
+    hydrateQuickAddMemberSelect();
+
+    if (showStatus) {
+      setStatus("Save Trello credentials and a board before loading Quick Add options.", true);
+    }
+
+    return false;
+  }
+
+  if (showStatus) {
+    setLoading(true);
+    setStatus("Refreshing Quick Add options...");
+  }
+
+  try {
+    const options = await window.taskWidget.getQuickAddOptions({
+      boardId: selectedBoardId,
+      credentials
+    });
+    state.quickAddOptions = {
+      lists: Array.isArray(options?.lists) ? options.lists : [],
+      templates: Array.isArray(options?.templates) ? options.templates : [],
+      labels: Array.isArray(options?.labels) ? options.labels : [],
+      members: Array.isArray(options?.members) ? options.members : []
+    };
+    state.quickAddOptionsBoardId = selectedBoardId;
+    hydrateQuickAddTemplateSelect();
+    hydrateQuickAddListSelect();
+    hydrateQuickAddLabelSelect();
+    hydrateQuickAddMemberSelect();
+
+    if (showStatus) {
+      setStatus(
+        `Found ${state.quickAddOptions.templates.length} templates, ${state.quickAddOptions.lists.length} lists, ${state.quickAddOptions.labels.length} labels, and ${state.quickAddOptions.members.length} members.`
+      );
+    }
+
+    return true;
+  } catch (error) {
+    if (showStatus) {
+      setStatus(error.message, true);
+    }
+
+    return false;
+  } finally {
+    if (showStatus) {
+      setLoading(false);
+    }
+  }
+}
+
+function hydrateQuickAddTemplateSelect() {
+  if (!elements.quickAddTemplateSelect) {
+    return;
+  }
+
+  elements.quickAddTemplateSelect.innerHTML = "";
+
+  const savedTemplate = state.settings?.quickAdd || {};
+  const templates = [...(state.quickAddOptions.templates || [])];
+  if (
+    savedTemplate.templateCardId &&
+    !templates.some((template) => template.id === savedTemplate.templateCardId)
+  ) {
+    templates.unshift({
+      id: savedTemplate.templateCardId,
+      name: savedTemplate.templateCardName || "Saved template"
+    });
+  }
+
+  if (templates.length === 0) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No template cards found";
+    elements.quickAddTemplateSelect.append(option);
+    return;
+  }
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Choose a template";
+  elements.quickAddTemplateSelect.append(placeholder);
+
+  for (const template of templates) {
+    const option = document.createElement("option");
+    option.value = template.id;
+    option.textContent = template.name;
+    option.selected = template.id === savedTemplate.templateCardId;
+    elements.quickAddTemplateSelect.append(option);
+  }
+}
+
+function hydrateQuickAddListSelect() {
+  if (!elements.quickAddListSelect) {
+    return;
+  }
+
+  elements.quickAddListSelect.innerHTML = "";
+
+  if (state.quickAddOptions.lists.length === 0) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No eligible lists";
+    elements.quickAddListSelect.append(option);
+    return;
+  }
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Choose a list";
+  elements.quickAddListSelect.append(placeholder);
+
+  for (const list of state.quickAddOptions.lists) {
+    const option = document.createElement("option");
+    option.value = list.id;
+    option.textContent = list.name;
+    elements.quickAddListSelect.append(option);
+  }
+}
+
+function hydrateQuickAddLabelSelect() {
+  if (!elements.quickAddLabelSelect) {
+    return;
+  }
+
+  elements.quickAddLabelSelect.innerHTML = "";
+
+  const emptyOption = document.createElement("option");
+  emptyOption.value = "";
+  emptyOption.textContent =
+    state.quickAddOptions.labels.length === 0 ? "No labels available" : "No label";
+  elements.quickAddLabelSelect.append(emptyOption);
+
+  for (const label of state.quickAddOptions.labels) {
+    const option = document.createElement("option");
+    option.value = label.id;
+    option.textContent = label.name;
+    elements.quickAddLabelSelect.append(option);
+  }
+}
+
+function hydrateQuickAddMemberSelect() {
+  if (!elements.quickAddMemberSelect) {
+    return;
+  }
+
+  elements.quickAddMemberSelect.innerHTML = "";
+
+  const emptyOption = document.createElement("option");
+  emptyOption.value = "";
+  emptyOption.textContent =
+    state.quickAddOptions.members.length === 0 ? "No members available" : "Unassigned";
+  elements.quickAddMemberSelect.append(emptyOption);
+
+  for (const member of state.quickAddOptions.members) {
+    const option = document.createElement("option");
+    option.value = member.id;
+    option.textContent = member.username ? `${member.name} (@${member.username})` : member.name;
+    elements.quickAddMemberSelect.append(option);
+  }
+}
+
+async function openQuickAdd() {
+  if (state.settings?.viewMode === "focus") {
+    await setViewMode("planning", false);
+  }
+
+  if (!state.settings?.hasCredentials || !state.settings?.boardId) {
+    showSetup(true);
+    setStatus("Finish Trello setup before using Quick Add.", true);
+    return;
+  }
+
+  if (!state.settings?.quickAdd?.templateCardId) {
+    showSetup(true);
+    await loadQuickAddOptions();
+    setStatus("Choose a Quick Add template in Settings.", true);
+    return;
+  }
+
+  if (
+    state.quickAddOptionsBoardId !== state.settings.boardId ||
+    state.quickAddOptions.lists.length === 0
+  ) {
+    const loaded = await loadQuickAddOptions({
+      showStatus: true,
+      boardId: state.settings.boardId
+    });
+    if (!loaded) {
+      return;
+    }
+  }
+
+  if (state.quickAddOptions.lists.length === 0) {
+    setStatus("No eligible Trello lists found for Quick Add.", true);
+    return;
+  }
+
+  hydrateQuickAddListSelect();
+  hydrateQuickAddLabelSelect();
+  hydrateQuickAddMemberSelect();
+  elements.quickAddTitleInput.value = "";
+  elements.quickAddListSelect.value = "";
+  elements.quickAddLabelSelect.value = "";
+  elements.quickAddDueDateInput.value = "";
+  elements.quickAddMemberSelect.value = "";
+  showDialog(elements.quickAddDialog);
+  elements.quickAddTitleInput.focus();
+}
+
+async function submitQuickAdd(event) {
+  event.preventDefault();
+
+  const name = elements.quickAddTitleInput.value.trim();
+  const listId = elements.quickAddListSelect.value;
+  const labelId = elements.quickAddLabelSelect.value;
+  const dueDate = elements.quickAddDueDateInput.value;
+  const memberId = elements.quickAddMemberSelect.value;
+
+  if (!name) {
+    setStatus("Enter a task title.", true);
+    elements.quickAddTitleInput.focus();
+    return;
+  }
+
+  if (!listId) {
+    setStatus("Choose a destination list.", true);
+    elements.quickAddListSelect.focus();
+    return;
+  }
+
+  setLoading(true);
+  elements.quickAddCreateButton.disabled = true;
+  setStatus("Creating task...");
+
+  try {
+    const createdCard = await window.taskWidget.quickAddCard({
+      name,
+      listId,
+      labelId,
+      dueDate,
+      memberId
+    });
+
+    closeDialog(elements.quickAddDialog);
+    await loadTasks();
+
+    let createdTask = getTaskById(createdCard.id);
+    if (!createdTask) {
+      createdTask = buildQuickAddTask(createdCard, {
+        listId,
+        labelId,
+        dueDate
+      });
+      state.tasks = [createdTask, ...state.tasks];
+      renderTasks();
+    }
+
+    state.pendingQuickAddTask = createdTask;
+    showQuickAddRoutePrompt(createdTask);
+    setStatus("Created task. Choose where to place it.");
+  } catch (error) {
+    setStatus(error.message, true);
+  } finally {
+    elements.quickAddCreateButton.disabled = false;
+    setLoading(false);
+  }
+}
+
+function buildQuickAddTask(card, options) {
+  const listId = options.listId;
+  const destinationList = state.quickAddOptions.lists.find((list) => list.id === listId);
+  const selectedLabel = state.quickAddOptions.labels.find((label) => label.id === options.labelId);
+  const due = card.due || normalizeQuickAddFallbackDue(options.dueDate);
+
+  return {
+    id: card.id,
+    name: card.name,
+    description: "",
+    due,
+    dueComplete: false,
+    lastActivity: new Date().toISOString(),
+    url: card.url,
+    listId,
+    listName: destinationList?.name || "Unknown list",
+    labels: Array.isArray(card.labels) && card.labels.length > 0
+      ? card.labels
+      : selectedLabel
+        ? [selectedLabel]
+        : [],
+    timeSpentMins: null,
+    status: card.status || getQuickAddFallbackDueStatus(due)
+  };
+}
+
+function normalizeQuickAddFallbackDue(dueDate) {
+  if (!dueDate) {
+    return null;
+  }
+
+  const due = new Date(`${dueDate}T12:00:00`);
+  return Number.isNaN(due.getTime()) ? null : due.toISOString();
+}
+
+function getQuickAddFallbackDueStatus(due) {
+  if (!due) {
+    return "none";
+  }
+
+  const now = new Date();
+  const dueDate = new Date(due);
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrowStart = new Date(todayStart);
+  tomorrowStart.setDate(todayStart.getDate() + 1);
+
+  if (dueDate < now) {
+    return "overdue";
+  }
+
+  if (dueDate < tomorrowStart) {
+    return "today";
+  }
+
+  return "upcoming";
+}
+
+function showQuickAddRoutePrompt(task) {
+  elements.quickAddRouteTitle.textContent = task.name;
+  elements.quickAddRouteFocusButton.disabled = state.timer.isRunning || state.timer.elapsedMs > 0;
+  showDialog(elements.quickAddRouteDialog);
+}
+
+async function routeQuickAddTask(route) {
+  const task = state.pendingQuickAddTask;
+  if (!task) {
+    closeDialog(elements.quickAddRouteDialog);
+    return;
+  }
+
+  if (route === "all") {
+    state.pendingQuickAddTask = null;
+    closeDialog(elements.quickAddRouteDialog);
+    renderTasks();
+    setStatus("Created in All Tasks.");
+    return;
+  }
+
+  if (route === "focus") {
+    if (state.timer.isRunning || state.timer.elapsedMs > 0) {
+      setStatus("Save the current timer before changing focus.", true);
+      showQuickAddRoutePrompt(task);
+      return;
+    }
+
+    await setFocusTask(task);
+    if (state.focusTask?.id === task.id) {
+      state.pendingQuickAddTask = null;
+      closeDialog(elements.quickAddRouteDialog);
+    }
+    return;
+  }
+
+  const queueName = route === "week" ? "week" : "today";
+
+  try {
+    state.settings = await window.taskWidget.addToQueue(queueName, task.id);
+    state.pendingQuickAddTask = null;
+    closeDialog(elements.quickAddRouteDialog);
+    renderTasks();
+    setStatus(`Added to ${getQueueLabel(queueName)}.`);
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
+function showDialog(dialog) {
+  if (dialog.open) {
+    return;
+  }
+
+  dialog.showModal();
+}
+
+function closeDialog(dialog) {
+  if (dialog.open) {
+    dialog.close();
+  }
+}
+
 async function saveSettings(event) {
   event.preventDefault();
   const apiKey = elements.apiKeyInput.value.trim();
   const token = elements.tokenInput.value.trim();
   const selectedOption = elements.boardSelect.selectedOptions[0];
   const boardId = elements.boardSelect.value;
+  const boardChanged = boardId !== state.settings?.boardId;
+  const selectedTemplateOption = elements.quickAddTemplateSelect.selectedOptions[0];
+  const templateMatchesBoard = !boardChanged || state.quickAddOptionsBoardId === boardId;
+  const quickAddTemplateCardId = templateMatchesBoard ? elements.quickAddTemplateSelect.value : "";
 
   if (!state.settings.hasCredentials && (!apiKey || !token)) {
     setStatus("Enter Trello credentials before saving.", true);
@@ -341,13 +793,18 @@ async function saveSettings(event) {
     state.settings = await window.taskWidget.saveSettings({
       boardId,
       boardName: selectedOption?.textContent || "",
-      refreshMinutes: Number(elements.refreshSelect.value)
+      refreshMinutes: Number(elements.refreshSelect.value),
+      quickAdd: {
+        templateCardId: quickAddTemplateCardId,
+        templateCardName: quickAddTemplateCardId ? selectedTemplateOption?.textContent || "" : ""
+      }
     });
 
     syncSettingsUi();
     showSetup(false);
     scheduleRefresh();
     await loadTasks();
+    await loadQuickAddOptions({ boardId });
   } catch (error) {
     setStatus(error.message, true);
   } finally {

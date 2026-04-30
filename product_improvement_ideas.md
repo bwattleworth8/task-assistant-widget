@@ -99,6 +99,17 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 - Hide/minimize behavior remains available only through explicit taskbar or tray actions.
 - Tray quit exits the app cleanly.
 
+### Quick Add For New Tasks
+
+- User can create a new Trello card from Plan Mode.
+- Settings stores the selected Trello template card used for Quick Add.
+- Quick Add prompts for a task title and destination list each time.
+- Quick Add also prompts for an optional label, due date, and assignee.
+- Quick Add automatically sets the Trello start date to the current date.
+- New cards copy the configured template with Trello source-copy behavior.
+- After creation, the task can be routed to Focus, Today, This Week, or left in All Tasks.
+- Trello failures leave local queues and focus unchanged.
+
 ## Planned
 
 ### Task Cleanup
@@ -135,12 +146,6 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
   - Blocked.
   - Done.
 
-### Quick Add For New Tasks
-
-- Let the user create a new Trello card from the widget.
-- Use a configured template to keep new cards consistent.
-- Keep quick capture available without forcing the user into Trello.
-
 ### Checklist / Definition Of Done
 
 - Show Trello checklist progress in the widget.
@@ -172,4 +177,4 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 1. Add Task Cleanup panel.
 2. Add Pomodoro presets.
 3. Add Status Adjuster.
-4. Add Quick Add.
+4. Add Checklist / Definition Of Done.
