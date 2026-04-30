@@ -71,7 +71,7 @@ class TrelloClient {
     const cards = await this.request(`/boards/${boardId}/cards`, {
       query: {
         filter: "open",
-        fields: "id,name,desc,due,dueComplete,dateLastActivity,url,idList,labels",
+        fields: "id,name,desc,due,dueComplete,dateLastActivity,url,idList,labels,isTemplate,cover",
         customFieldItems: "true",
         members: "false"
       }
@@ -91,7 +91,7 @@ class TrelloClient {
     const listNames = new Map(lists.map((list) => [list.id, list.name]));
 
     return cards
-      .filter((card) => !card.dueComplete)
+      .filter((card) => !isCompletedCard(card, listNames.get(card.idList)))
       .map((card) =>
         normalizeCard(card, listNames.get(card.idList) || "Unknown list", timeSpentField)
       )
@@ -198,6 +198,19 @@ function normalizeCard(card, listName, timeSpentField) {
 
 function findTimeSpentField(customFields) {
   return (customFields || []).find((field) => normalizeFieldName(field.name) === "time spent (mins)");
+}
+
+function isCompletedCard(card, listName) {
+  return Boolean(card.dueComplete) || isCompletedListName(listName) || isTemplateCard(card);
+}
+
+function isCompletedListName(listName) {
+  const normalizedListName = normalizeFieldName(listName).replace(/[^a-z0-9]+/g, " ").trim();
+  return ["complete", "completed", "done"].includes(normalizedListName);
+}
+
+function isTemplateCard(card) {
+  return Boolean(card.isTemplate) || Boolean(card.cover?.isTemplate);
 }
 
 function getCardTimeSpent(card, timeSpentField) {

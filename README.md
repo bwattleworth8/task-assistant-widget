@@ -29,7 +29,7 @@ Credentials are saved locally. When Electron's `safeStorage` encryption is avail
 
 ## Behavior
 
-- Shows open, incomplete cards from the selected Trello board.
+- Shows open, incomplete, non-template cards from the selected Trello board and hides cards in `Done`, `Complete`, or `Completed` lists.
 - Sorts overdue cards first, then upcoming due dates, then cards without due dates.
 - Keeps the Current Focus pane empty until you choose a task card.
 - Adds local Today Queue and This Week Queue sections for personal planning without changing Trello cards.
