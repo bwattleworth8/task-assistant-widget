@@ -47,6 +47,7 @@ Credentials are saved locally. When Electron `safeStorage` encryption is availab
 - Selectable Lists filters that narrow the visible planning panes to chosen Trello lists.
 - Settings, refresh, pin-on-top, and theme controls.
 - Filter controls for all, due soon, overdue, and no due date.
+- Native window close quits the app; hide/minimize behavior remains explicit.
 - Local Today Queue and This Week Queue.
 - Drag-and-drop queue ordering.
 - Move This Week tasks into Today.
@@ -114,11 +115,6 @@ The widget currently writes to Trello only for explicit user actions:
 - End focus with notes: adds a Trello card comment.
 
 Local queues, draft notes, theme, window mode, and view preferences do not modify Trello.
-
-## Known Follow-Ups
-
-- Clicking the native window **X** should quit the app instead of minimizing or hiding it.
-- Light mode needs a styling and legibility pass; some surfaces and task items still retain dark-mode styling.
 
 See [product_roadmap.md](product_roadmap.md) for planned product work and validation notes.
 

@@ -72,6 +72,7 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 - Plan Mode uses a modern dashboard layout with a left navigation pane.
 - Sidebar items for Focus, Today, This Week, and All Tasks are actionable.
 - Light and dark themes are supported.
+- Light mode has dedicated surface, task card, button, border, sidebar, and Focus Mode rail styling.
 - Typography has been tuned around Inter, Satoshi, and JetBrains Mono.
 
 ### Left-Rail Focus Mode
@@ -89,19 +90,13 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 - Notes are written into the Trello card comments/activity section when focus is cleared, completed, or replaced.
 - If the Trello comment write fails, local notes should remain available instead of being discarded.
 
-## Planned
-
 ### Window Close Behavior
 
-- Clicking the native window **X** should quit the application.
-- Hide/minimize behavior should remain available only through explicit taskbar or tray actions.
-- Tray quit should continue to exit the app cleanly.
+- Clicking the native window **X** quits the application.
+- Hide/minimize behavior remains available only through explicit taskbar or tray actions.
+- Tray quit exits the app cleanly.
 
-### Light Mode Styling Pass
-
-- Improve light mode legibility across the dashboard and Focus Mode.
-- Replace remaining dark-mode surfaces or low-contrast text that appear in light mode.
-- Tune light-mode colors for task cards, metadata pills, buttons, borders, and sidebar states.
+## Planned
 
 ### Task Cleanup
 
@@ -171,9 +166,7 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 
 ## Suggested Build Order From Here
 
-1. Make native window **X** quit the app instead of minimizing or hiding it.
-2. Fix light mode styling and legibility.
-3. Add Task Cleanup panel.
-4. Add Pomodoro presets.
-5. Add Status Adjuster.
-6. Add Quick Add.
+1. Add Task Cleanup panel.
+2. Add Pomodoro presets.
+3. Add Status Adjuster.
+4. Add Quick Add.

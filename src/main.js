@@ -71,13 +71,7 @@ function createWindow() {
     return { action: "deny" };
   });
 
-  mainWindow.on("close", (event) => {
-    if (!app.isQuitting) {
-      event.preventDefault();
-      mainWindow.minimize();
-      return;
-    }
-
+  mainWindow.on("close", () => {
     saveWindowBounds();
   });
 

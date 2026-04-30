@@ -20,7 +20,8 @@ Build a local Windows desktop widget that helps plan, organize, and focus on Tre
 - Added setup/settings flow for Trello API key, token, board fetch, and board selection.
 - Added encrypted local credential storage when Electron `safeStorage` is available.
 - Added tray actions for show, refresh, settings, mode switching, always-on-top, theme, and quit.
-- Added hide-to-taskbar behavior.
+- Native window close quits the application.
+- Hide/minimize behavior remains available through explicit app actions.
 
 ### Trello Task Display
 
@@ -68,6 +69,7 @@ Build a local Windows desktop widget that helps plan, organize, and focus on Tre
   - Headings/accent: Satoshi.
 - Timer: JetBrains Mono with tabular numbers.
 - Added light/dark theme support.
+- Added dedicated light-mode styling for dashboard surfaces, task cards, controls, sidebar states, and Focus Mode.
 
 ### Planning Navigation And Filters
 
@@ -110,20 +112,6 @@ Focus Mode uses a compact left-side rail:
 
 Notes are stored by Trello card ID in browser `localStorage` while drafting. When focus is cleared, completed, or replaced, the note is written to Trello as a card comment and then cleared locally after Trello confirms the write.
 
-## Upcoming Roadmap
-
-### Window Close Behavior
-
-- Clicking the native window **X** should quit the application instead of minimizing or hiding it.
-- Keep hide/minimize behavior available only through explicit taskbar or tray actions.
-- Confirm tray quit still exits cleanly after this change.
-
-### Light Mode Styling Pass
-
-- Dark mode is visually strong, but light mode needs a dedicated legibility pass.
-- Some UI surfaces and task items still read as dark-mode elements in light mode.
-- Update light-mode color choices for surfaces, task cards, pills, buttons, borders, text, and metadata so the whole app remains readable and intentional.
-
 ## Trello Behavior
 
 - Trello is the source of truth for cards.
@@ -136,13 +124,11 @@ Notes are stored by Trello card ID in browser `localStorage` while drafting. Whe
 
 ## Roadmap Backlog
 
-1. **Window close behavior:** clicking the native window **X** should quit the app instead of minimizing or hiding it.
-2. **Light mode styling pass:** improve contrast, surfaces, and remaining dark elements in light mode.
-3. **Task Cleanup panel:** identify cards with missing due dates, missing labels, overdue state, or other planning gaps.
-4. **Pomodoro presets:** add countdown sessions alongside the existing stopwatch.
-5. **Status Adjuster:** update task status from the widget, likely through list moves, labels, or custom fields.
-6. **Quick Add:** create a new Trello card from a configured template.
-7. **Checklist / Definition Of Done:** show checklist progress in Focus Mode.
+1. **Task Cleanup panel:** identify cards with missing due dates, missing labels, overdue state, or other planning gaps.
+2. **Pomodoro presets:** add countdown sessions alongside the existing stopwatch.
+3. **Status Adjuster:** update task status from the widget, likely through list moves, labels, or custom fields.
+4. **Quick Add:** create a new Trello card from a configured template.
+5. **Checklist / Definition Of Done:** show checklist progress in Focus Mode.
 
 ## Validation Plan
 
@@ -161,6 +147,7 @@ Notes are stored by Trello card ID in browser `localStorage` while drafting. Whe
 - Verify Plan Mode keeps the sidebar fixed while only the workspace scrolls.
 - Verify the Lists section scrolls independently above the Daily Summary when many lists are present.
 - Verify saving focus time updates Daily Summary total time and distinct task count.
+- Verify light mode keeps dashboard, task cards, controls, sidebar, and Focus Mode surfaces legible.
 - Verify focus note toolbar buttons format selected text or insert Markdown-style scaffolds.
 - Verify clearing, completing, or replacing focus writes non-empty notes to Trello comments.
 - Verify local focus notes are cleared only after Trello confirms the comment write.
@@ -173,4 +160,4 @@ Notes are stored by Trello card ID in browser `localStorage` while drafting. Whe
 - The selected Trello board contains the tasks to show.
 - Existing Trello automation reacts to `dueComplete=true`.
 - Local queue and focus note state are personal to this widget installation.
-- Full Trello editing, comments, checklist editing, and multi-board aggregation remain future work.
+- General Trello editing, checklist editing, and multi-board aggregation remain future work.
