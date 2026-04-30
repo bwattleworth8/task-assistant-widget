@@ -191,9 +191,14 @@ class TrelloClient {
 
     return this.request(`/boards/${boardId}/customFields`, {
       query: {
-        fields: "id,name,type"
+        fields: "id,name,type,options"
       }
     });
+  }
+
+  async getBoardPriorityField(boardId) {
+    const customFields = await this.getBoardCustomFields(boardId);
+    return normalizeListCustomField(findPriorityField(customFields), "Priority");
   }
 
   async addTimeSpent(boardId, cardId, minutes) {
@@ -298,8 +303,21 @@ class TrelloClient {
 
     const labelId = String(options.labelId || "").trim();
     const memberId = String(options.memberId || "").trim();
+    const priorityOptionId = String(options.priorityOptionId || "").trim();
     const due = normalizeDueDateForTrello(options.dueDate);
     const start = getCurrentStartDateForTrello();
+    const customFields = await this.getBoardCustomFields(boardId);
+    const statusField = normalizeListCustomField(findStatusField(customFields), "Status");
+    const todoStatusOption = findCustomFieldOptionByName(statusField, "to do");
+    const priorityField = priorityOptionId
+      ? normalizeListCustomField(findPriorityField(customFields), "Priority")
+      : null;
+
+    validateListCustomFieldOption(statusField, todoStatusOption?.id, "Status", "To do");
+    if (priorityOptionId) {
+      validateListCustomFieldOption(priorityField, priorityOptionId, "Priority");
+    }
+
     const card = await this.request("/cards", {
       method: "POST",
       query: {
@@ -314,6 +332,12 @@ class TrelloClient {
         fields: "id,name,url,idList,due,start,dueComplete,dateLastActivity,labels"
       }
     });
+
+    await this.setListCustomFieldOption(card.id, statusField, todoStatusOption.id, "Status");
+
+    if (priorityOptionId) {
+      await this.setListCustomFieldOption(card.id, priorityField, priorityOptionId, "Priority");
+    }
 
     return {
       id: card.id,
@@ -331,6 +355,22 @@ class TrelloClient {
       })),
       status: getDueStatus(card.due)
     };
+  }
+
+  async setListCustomFieldOption(cardId, customField, optionId, fieldLabel) {
+    if (!cardId) {
+      throw new Error("Missing Trello card id.");
+    }
+
+    const normalizedOptionId = String(optionId || "").trim();
+    validateListCustomFieldOption(customField, normalizedOptionId, fieldLabel);
+
+    return this.request(`/card/${cardId}/customField/${customField.id}/item`, {
+      method: "PUT",
+      body: {
+        idValue: normalizedOptionId
+      }
+    });
   }
 }
 
@@ -356,7 +396,64 @@ function normalizeCard(card, listName, timeSpentField) {
 }
 
 function findTimeSpentField(customFields) {
-  return (customFields || []).find((field) => normalizeFieldName(field.name) === "time spent (mins)");
+  return (customFields || []).find((field) => normalizeFieldName(getCustomFieldName(field)) === "time spent (mins)");
+}
+
+function findPriorityField(customFields) {
+  return (customFields || []).find((field) => normalizeFieldName(getCustomFieldName(field)) === "priority");
+}
+
+function findStatusField(customFields) {
+  return (customFields || []).find((field) => normalizeFieldName(getCustomFieldName(field)) === "status");
+}
+
+function getCustomFieldName(field) {
+  return field?.name || field?.display?.name || "";
+}
+
+function getCustomFieldOptions(field) {
+  const options = field?.options || field?.display?.options || [];
+  return Array.isArray(options) ? options : [];
+}
+
+function normalizeListCustomField(field, fallbackName) {
+  if (!field) {
+    return null;
+  }
+
+  return {
+    id: field.id,
+    name: getCustomFieldName(field) || fallbackName,
+    type: field.type,
+    options: getCustomFieldOptions(field)
+      .map((option) => ({
+        id: option.id,
+        name: option.value?.text || `Unnamed ${fallbackName.toLowerCase()}`,
+        color: option.color || "none",
+        pos: option.pos || 0
+      }))
+      .sort((a, b) => Number(a.pos || 0) - Number(b.pos || 0))
+  };
+}
+
+function findCustomFieldOptionByName(field, optionName) {
+  const normalizedOptionName = normalizeFieldName(optionName);
+  return (field?.options || []).find((option) => normalizeFieldName(option.name) === normalizedOptionName);
+}
+
+function validateListCustomFieldOption(customField, optionId, fieldLabel, optionLabel) {
+  if (!customField) {
+    throw new Error(`Create a Trello dropdown custom field named "${fieldLabel}" before setting ${fieldLabel.toLowerCase()}.`);
+  }
+
+  if (customField.type !== "list") {
+    throw new Error(`The Trello custom field "${fieldLabel}" must be a dropdown field.`);
+  }
+
+  if (!customField.options.some((option) => option.id === optionId)) {
+    const optionText = optionLabel ? ` named "${optionLabel}"` : "";
+    throw new Error(`Choose a valid ${fieldLabel.toLowerCase()} option${optionText}.`);
+  }
 }
 
 function isCompletedCard(card, listName) {

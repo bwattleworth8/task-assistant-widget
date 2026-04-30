@@ -11,6 +11,8 @@ const { TrelloClient } = require("./trelloClient");
 
 let mainWindow;
 let tray;
+let applyingWindowModeBounds = false;
+let windowModeBoundsSaveTimer = null;
 
 const APP_ICON_DATA_URL =
   "data:image/png;base64,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";
@@ -81,6 +83,10 @@ function createWindow() {
 
 function saveWindowBounds() {
   if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+
+  if (applyingWindowModeBounds || mainWindow.isFullScreen() || mainWindow.isMaximized()) {
     return;
   }
 
@@ -168,7 +174,71 @@ function resizeWindowForMode(viewMode) {
   const modeConfig = WINDOW_MODES[viewMode];
   const currentBounds = mainWindow.getBounds();
   const nextBounds = getWindowBoundsForMode(loadSettings(), viewMode, currentBounds);
+  const targetBounds = {
+    ...nextBounds,
+    x: nextBounds.x ?? currentBounds.x,
+    y: nextBounds.y ?? currentBounds.y
+  };
 
+  if (viewMode === "focus") {
+    restoreWindowForExplicitBounds();
+  }
+
+  applyingWindowModeBounds = true;
+  mainWindow.setMinimumSize(modeConfig.minWidth, modeConfig.minHeight);
+  mainWindow.setBounds(targetBounds, false);
+  saveWindowBoundsAfterModeResize();
+
+  if (viewMode === "focus") {
+    setTimeout(enforceFocusModeBounds, 150);
+  }
+}
+
+function restoreWindowForExplicitBounds() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+
+  if (mainWindow.isFullScreen()) {
+    mainWindow.setFullScreen(false);
+  }
+
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+
+  if (mainWindow.isMaximized()) {
+    mainWindow.unmaximize();
+  }
+}
+
+function saveWindowBoundsAfterModeResize() {
+  if (windowModeBoundsSaveTimer) {
+    clearTimeout(windowModeBoundsSaveTimer);
+  }
+
+  windowModeBoundsSaveTimer = setTimeout(() => {
+    windowModeBoundsSaveTimer = null;
+    applyingWindowModeBounds = false;
+    saveWindowBounds();
+  }, 120);
+}
+
+function enforceFocusModeBounds() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+
+  if (normalizeViewMode(loadSettings().viewMode) !== "focus") {
+    return;
+  }
+
+  const modeConfig = WINDOW_MODES.focus;
+  const currentBounds = mainWindow.getBounds();
+  const nextBounds = getWindowBoundsForMode(loadSettings(), "focus", currentBounds);
+
+  restoreWindowForExplicitBounds();
+  applyingWindowModeBounds = true;
   mainWindow.setMinimumSize(modeConfig.minWidth, modeConfig.minHeight);
   mainWindow.setBounds(
     {
@@ -176,8 +246,9 @@ function resizeWindowForMode(viewMode) {
       x: nextBounds.x ?? currentBounds.x,
       y: nextBounds.y ?? currentBounds.y
     },
-    true
+    false
   );
+  saveWindowBoundsAfterModeResize();
 }
 
 function createTray() {
@@ -520,18 +591,20 @@ function registerIpcHandlers() {
           token: String(payload.credentials.token || "").trim()
         })
       : getConfiguredClient();
-    const [lists, templates, labels, members] = await Promise.all([
+    const [lists, templates, labels, members, priorityField] = await Promise.all([
       client.getBoardLists(boardId),
       client.getBoardTemplateCards(boardId),
       client.getBoardLabels(boardId),
-      client.getBoardMembers(boardId)
+      client.getBoardMembers(boardId),
+      client.getBoardPriorityField(boardId)
     ]);
 
     return {
       lists,
       templates,
       labels,
-      members
+      members,
+      priorityField
     };
   });
 
@@ -546,7 +619,8 @@ function registerIpcHandlers() {
       {
         labelId: payload?.labelId,
         dueDate: payload?.dueDate,
-        memberId: payload?.memberId
+        memberId: payload?.memberId,
+        priorityOptionId: payload?.priorityOptionId
       }
     );
   });

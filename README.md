@@ -51,7 +51,7 @@ Credentials are saved locally. When Electron `safeStorage` encryption is availab
 - Local Today Queue and This Week Queue.
 - Drag-and-drop queue ordering.
 - Move This Week tasks into Today.
-- Quick Add creates a Trello card from a configured template, sets today's start date, prompts for label, due date, and assignee, then routes it to Focus, Today, This Week, or All Tasks.
+- Quick Add creates a Trello card from a configured template, sets today's start date and `Status=To do`, prompts for label, priority, due date, and assignee, then routes it to Focus, Today, This Week, or All Tasks.
 - All Tasks excludes tasks already in Focus, Today, or This Week.
 - Sidebar Daily Summary shows today's focus time, distinct tasks worked, and completed tasks.
 
@@ -116,7 +116,7 @@ The widget currently writes to Trello only for explicit user actions:
 - Complete task: sets `dueComplete=true`.
 - Save elapsed focus time: updates `Time Spent (mins)`.
 - End focus with notes: adds a Trello card comment.
-- Quick Add: creates a new card by copying the configured template into the selected list, setting today's start date, with optional label, due date, and assignee.
+- Quick Add: creates a new card by copying the configured template into the selected list, setting today's start date and `Status=To do`, with optional label, priority, due date, and assignee.
 
 Local queues, draft notes, theme, window mode, and view preferences do not modify Trello.
 

@@ -18,7 +18,8 @@ const state = {
     lists: [],
     templates: [],
     labels: [],
-    members: []
+    members: [],
+    priorityField: null
   },
   quickAddOptionsBoardId: "",
   pendingQuickAddTask: null,
@@ -106,6 +107,7 @@ const elements = {
   quickAddTitleInput: document.querySelector("#quickAddTitleInput"),
   quickAddListSelect: document.querySelector("#quickAddListSelect"),
   quickAddLabelSelect: document.querySelector("#quickAddLabelSelect"),
+  quickAddPrioritySelect: document.querySelector("#quickAddPrioritySelect"),
   quickAddDueDateInput: document.querySelector("#quickAddDueDateInput"),
   quickAddMemberSelect: document.querySelector("#quickAddMemberSelect"),
   quickAddCancelButton: document.querySelector("#quickAddCancelButton"),
@@ -223,6 +225,7 @@ function syncSettingsUi() {
   hydrateQuickAddTemplateSelect();
   hydrateQuickAddListSelect();
   hydrateQuickAddLabelSelect();
+  hydrateQuickAddPrioritySelect();
   hydrateQuickAddMemberSelect();
 }
 
@@ -364,12 +367,14 @@ async function loadQuickAddOptions({ showStatus = false, boardId } = {}) {
       lists: [],
       templates: [],
       labels: [],
-      members: []
+      members: [],
+      priorityField: null
     };
     state.quickAddOptionsBoardId = "";
     hydrateQuickAddTemplateSelect();
     hydrateQuickAddListSelect();
     hydrateQuickAddLabelSelect();
+    hydrateQuickAddPrioritySelect();
     hydrateQuickAddMemberSelect();
 
     if (showStatus) {
@@ -393,17 +398,19 @@ async function loadQuickAddOptions({ showStatus = false, boardId } = {}) {
       lists: Array.isArray(options?.lists) ? options.lists : [],
       templates: Array.isArray(options?.templates) ? options.templates : [],
       labels: Array.isArray(options?.labels) ? options.labels : [],
-      members: Array.isArray(options?.members) ? options.members : []
+      members: Array.isArray(options?.members) ? options.members : [],
+      priorityField: options?.priorityField || null
     };
     state.quickAddOptionsBoardId = selectedBoardId;
     hydrateQuickAddTemplateSelect();
     hydrateQuickAddListSelect();
     hydrateQuickAddLabelSelect();
+    hydrateQuickAddPrioritySelect();
     hydrateQuickAddMemberSelect();
 
     if (showStatus) {
       setStatus(
-        `Found ${state.quickAddOptions.templates.length} templates, ${state.quickAddOptions.lists.length} lists, ${state.quickAddOptions.labels.length} labels, and ${state.quickAddOptions.members.length} members.`
+        `Found ${state.quickAddOptions.templates.length} templates, ${state.quickAddOptions.lists.length} lists, ${state.quickAddOptions.labels.length} labels, ${getQuickAddPriorityOptions().length} priorities, and ${state.quickAddOptions.members.length} members.`
       );
     }
 
@@ -511,6 +518,34 @@ function hydrateQuickAddLabelSelect() {
   }
 }
 
+function hydrateQuickAddPrioritySelect() {
+  if (!elements.quickAddPrioritySelect) {
+    return;
+  }
+
+  elements.quickAddPrioritySelect.innerHTML = "";
+
+  const priorityOptions = getQuickAddPriorityOptions();
+  const emptyOption = document.createElement("option");
+  emptyOption.value = "";
+  emptyOption.textContent =
+    priorityOptions.length === 0 ? "No Priority field options" : "No priority";
+  elements.quickAddPrioritySelect.append(emptyOption);
+
+  for (const priority of priorityOptions) {
+    const option = document.createElement("option");
+    option.value = priority.id;
+    option.textContent = priority.name;
+    elements.quickAddPrioritySelect.append(option);
+  }
+}
+
+function getQuickAddPriorityOptions() {
+  return Array.isArray(state.quickAddOptions.priorityField?.options)
+    ? state.quickAddOptions.priorityField.options
+    : [];
+}
+
 function hydrateQuickAddMemberSelect() {
   if (!elements.quickAddMemberSelect) {
     return;
@@ -570,10 +605,12 @@ async function openQuickAdd() {
 
   hydrateQuickAddListSelect();
   hydrateQuickAddLabelSelect();
+  hydrateQuickAddPrioritySelect();
   hydrateQuickAddMemberSelect();
   elements.quickAddTitleInput.value = "";
   elements.quickAddListSelect.value = "";
   elements.quickAddLabelSelect.value = "";
+  elements.quickAddPrioritySelect.value = "";
   elements.quickAddDueDateInput.value = "";
   elements.quickAddMemberSelect.value = "";
   showDialog(elements.quickAddDialog);
@@ -586,6 +623,7 @@ async function submitQuickAdd(event) {
   const name = elements.quickAddTitleInput.value.trim();
   const listId = elements.quickAddListSelect.value;
   const labelId = elements.quickAddLabelSelect.value;
+  const priorityOptionId = elements.quickAddPrioritySelect.value;
   const dueDate = elements.quickAddDueDateInput.value;
   const memberId = elements.quickAddMemberSelect.value;
 
@@ -610,6 +648,7 @@ async function submitQuickAdd(event) {
       name,
       listId,
       labelId,
+      priorityOptionId,
       dueDate,
       memberId
     });
@@ -1037,6 +1076,7 @@ function renderQueueCard(queueName, task) {
   item.addEventListener("drop", (event) => handleQueueDrop(event, queueName, task.id, item));
   item.addEventListener("dragend", clearQueueDragState);
 
+  const completeCheckbox = createCompleteCheckbox(task, item);
   const title = document.createElement("h3");
   title.textContent = task.name;
 
@@ -1069,7 +1109,7 @@ function renderQueueCard(queueName, task) {
       : [];
 
   actions.append(...queueButtons, focusButton, openButton, removeButton);
-  item.append(title, meta, actions);
+  item.append(completeCheckbox, title, meta, actions);
   return item;
 }
 
@@ -1374,6 +1414,49 @@ function createActionButton(label, className, onClick) {
   button.textContent = label;
   button.addEventListener("click", onClick);
   return button;
+}
+
+function createCompleteCheckbox(task, item) {
+  const checkbox = document.createElement("button");
+  checkbox.className = "complete-checkbox";
+  checkbox.type = "button";
+  checkbox.setAttribute("role", "checkbox");
+  checkbox.setAttribute("aria-checked", "false");
+  checkbox.setAttribute("aria-label", `Complete ${task.name}`);
+  checkbox.title = "Complete task";
+  checkbox.addEventListener("click", (event) => handlePlanTaskComplete(event, task, item, checkbox));
+  return checkbox;
+}
+
+async function handlePlanTaskComplete(event, task, item, checkbox) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (checkbox.disabled) {
+    return;
+  }
+
+  if (task.id === state.focusTask?.id && (state.timer.isRunning || state.timer.elapsedMs > 0)) {
+    setStatus("Save the current timer before completing this task.", true);
+    return;
+  }
+
+  checkbox.disabled = true;
+  checkbox.setAttribute("aria-checked", "true");
+  item.classList.add("completing");
+
+  await waitForCompletionAnimation();
+  const completed = await completeTask(task.id);
+
+  if (!completed) {
+    checkbox.disabled = false;
+    checkbox.setAttribute("aria-checked", "false");
+    item.classList.remove("completing");
+  }
+}
+
+function waitForCompletionAnimation() {
+  return new Promise((resolve) => window.setTimeout(resolve, 420));
 }
 
 async function toggleQueuedTask(queueName, cardId) {
@@ -2098,6 +2181,7 @@ function renderTaskList(tasks) {
     item.className = "task-item";
     item.classList.toggle("active-focus", task.id === state.focusTask?.id);
 
+    const completeCheckbox = createCompleteCheckbox(task, item);
     const title = document.createElement("h3");
     title.textContent = task.name;
 
@@ -2120,14 +2204,6 @@ function renderTaskList(tasks) {
       () => toggleQueuedTask("week", task.id)
     );
 
-    const completeButton = document.createElement("button");
-    completeButton.className = "primary-button";
-    completeButton.type = "button";
-    completeButton.textContent = "Complete";
-    completeButton.disabled =
-      task.id === state.focusTask?.id && (state.timer.isRunning || state.timer.elapsedMs > 0);
-    completeButton.addEventListener("click", () => completeTask(task.id));
-
     const focusButton = document.createElement("button");
     focusButton.className = "secondary-button";
     focusButton.type = "button";
@@ -2141,8 +2217,8 @@ function renderTaskList(tasks) {
     openButton.textContent = "Open";
     openButton.addEventListener("click", () => openTask(task.url));
 
-    actions.append(todayButton, weekButton, focusButton, completeButton, openButton);
-    item.append(title, meta, actions);
+    actions.append(todayButton, weekButton, focusButton, openButton);
+    item.append(completeCheckbox, title, meta, actions);
     elements.taskList.append(item);
   }
 }
@@ -2233,7 +2309,7 @@ function formatSummaryDuration(minutes) {
 
 async function completeTask(cardId) {
   if (!cardId) {
-    return;
+    return false;
   }
 
   const completingFocusTask = cardId === state.focusTask?.id;
@@ -2244,7 +2320,7 @@ async function completeTask(cardId) {
 
   if (completingFocusTask && (state.timer.isRunning || state.timer.elapsedMs > 0)) {
     setStatus("Save the current timer before completing this task.", true);
-    return;
+    return false;
   }
 
   setLoading(true);
@@ -2269,8 +2345,10 @@ async function completeTask(cardId) {
     }
     renderTasks();
     setStatus("Marked complete.");
+    return true;
   } catch (error) {
     setStatus(error.message, true);
+    return false;
   } finally {
     setLoading(false);
   }

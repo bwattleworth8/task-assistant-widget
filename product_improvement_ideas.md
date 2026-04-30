@@ -104,8 +104,9 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 - User can create a new Trello card from Plan Mode.
 - Settings stores the selected Trello template card used for Quick Add.
 - Quick Add prompts for a task title and destination list each time.
-- Quick Add also prompts for an optional label, due date, and assignee.
+- Quick Add also prompts for an optional label, priority, due date, and assignee.
 - Quick Add automatically sets the Trello start date to the current date.
+- Quick Add automatically sets the Trello `Status` custom field to `To do`.
 - New cards copy the configured template with Trello source-copy behavior.
 - After creation, the task can be routed to Focus, Today, This Week, or left in All Tasks.
 - Trello failures leave local queues and focus unchanged.
@@ -172,9 +173,19 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
   - Tasks carried forward.
   - Captured distractions or quick-add tasks.
 
+### LLM Planning Assistant
+
+- Add a read-only Plan Mode assistant for planning support.
+- Help plan the day, suggest what to do next, identify cleanup issues, and answer questions about task context and notes.
+- Use full task details only when the user explicitly invokes the assistant.
+- Do not automatically write to Trello, change queues, or change focus in the first version.
+- Future enhancement could add explicit one-click action buttons for recommended changes.
+- OpenAI API is the likely future provider, but integration is deferred.
+
 ## Suggested Build Order From Here
 
 1. Add Task Cleanup panel.
 2. Add Pomodoro presets.
 3. Add Status Adjuster.
 4. Add Checklist / Definition Of Done.
+5. Add LLM Planning Assistant.
