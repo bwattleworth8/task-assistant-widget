@@ -1791,3 +1791,321 @@ label,
     justify-self: center;
   }
 }
+
+/* Focus rail mode. */
+.focus-mode-only {
+  display: none;
+}
+
+body.focus-mode {
+  min-width: 0;
+  background:
+    radial-gradient(circle at 100% 24%, rgba(116, 96, 255, 0.18), transparent 48%),
+    linear-gradient(145deg, #0c111c 0%, #080b12 100%);
+  overflow: hidden;
+}
+
+body.focus-mode .app-shell {
+  display: block;
+  min-height: 100vh;
+  padding: 0;
+  border: 1px solid rgba(170, 183, 211, 0.18);
+  background:
+    radial-gradient(circle at 100% 32%, rgba(83, 99, 222, 0.16), transparent 52%),
+    rgba(9, 13, 22, 0.92);
+}
+
+body.focus-mode .workspace {
+  height: 100vh;
+  padding: 18px 16px 16px;
+  overflow-y: auto;
+}
+
+body.focus-mode main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+body.focus-mode .sidebar,
+body.focus-mode .titlebar,
+body.focus-mode .toolbar,
+body.focus-mode .status-strip,
+body.focus-mode .board-grid {
+  display: none;
+}
+
+body.focus-mode .focus-mode-only {
+  display: block;
+}
+
+.focus-mode-header {
+  color: var(--text);
+}
+
+.focus-window-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 26px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: var(--weight-medium);
+}
+
+.focus-brand-mark {
+  width: 20px;
+  height: 20px;
+  flex-basis: 20px;
+}
+
+.focus-brand-mark::after {
+  left: 6px;
+  top: 5px;
+  width: 5px;
+  height: 8px;
+  border-right-width: 2px;
+  border-bottom-width: 2px;
+}
+
+.focus-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 14px;
+  border-radius: 9px;
+  padding: 7px 10px;
+  color: var(--accent-strong);
+  background: rgba(169, 148, 255, 0.13);
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+}
+
+.focus-mode-pill span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8b6dff;
+}
+
+.focus-mode-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.focus-mode-title-row h1 {
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: var(--weight-semibold);
+  line-height: 1.12;
+}
+
+.focus-mode-title-row p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.focus-header-open-button {
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 10px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+body.focus-mode .focus-panel {
+  min-height: 0;
+  border-radius: 9px;
+  padding: 18px;
+  border-color: rgba(169, 148, 255, 0.48);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(169, 148, 255, 0.16), transparent 42%),
+    linear-gradient(145deg, rgba(27, 23, 45, 0.9), rgba(17, 23, 34, 0.94));
+  box-shadow: var(--soft-shadow);
+}
+
+body.focus-mode #focusActive,
+body.focus-mode .focus-empty {
+  min-height: 0;
+}
+
+body.focus-mode .focus-empty {
+  padding: 18px 0;
+}
+
+body.focus-mode .focus-heading {
+  margin-bottom: 12px;
+}
+
+body.focus-mode .focus-heading-actions {
+  display: none;
+}
+
+body.focus-mode .focus-panel h2 {
+  max-width: none;
+  margin-bottom: 12px;
+  font-size: 18px;
+  line-height: 1.28;
+}
+
+body.focus-mode .task-meta {
+  gap: 7px;
+  margin-bottom: 0;
+}
+
+body.focus-mode .timer-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 28px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+body.focus-mode .timer-display {
+  color: var(--text);
+  font-size: var(--type-timer);
+  text-shadow: 0 18px 34px rgba(0, 0, 0, 0.5);
+}
+
+body.focus-mode #focusTimeTotal {
+  align-self: flex-start;
+  justify-self: auto;
+  margin: 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+body.focus-mode .timer-actions {
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+body.focus-mode .timer-actions .primary-button,
+body.focus-mode .timer-actions .secondary-button {
+  width: 100%;
+  min-height: 40px;
+  border-radius: 9px;
+}
+
+body.focus-mode .timer-actions .primary-button {
+  background: linear-gradient(135deg, #4a84ff, #b04ce5);
+}
+
+body.focus-mode .focus-card-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+body.focus-mode .focus-card-actions .secondary-button {
+  min-width: 0;
+  min-height: 36px;
+  border-radius: 9px;
+  padding: 0 8px;
+}
+
+.focus-notes-panel {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 18px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(169, 148, 255, 0.08), transparent 44%),
+    rgba(255, 255, 255, 0.035);
+}
+
+.focus-notes-hint {
+  margin: 14px 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.focus-notes-panel textarea {
+  width: 100%;
+  min-height: 132px;
+  resize: vertical;
+  border: 1px solid rgba(170, 183, 211, 0.12);
+  border-radius: 9px;
+  padding: 12px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.045);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.focus-notes-panel textarea:disabled {
+  opacity: 0.65;
+}
+
+.focus-notes-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.focus-notes-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid rgba(170, 183, 211, 0.12);
+  border-radius: 8px;
+  padding: 5px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.focus-notes-tools button {
+  min-width: 28px;
+  min-height: 24px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text);
+  background: transparent;
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+}
+
+.focus-notes-footer p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.focus-mode-exit {
+  padding-bottom: 8px;
+  text-align: center;
+}
+
+.exit-focus-button {
+  width: 100%;
+  min-height: 39px;
+  border: 1px solid rgba(255, 107, 122, 0.42);
+  border-radius: 9px;
+  color: #ff7a87;
+  background: rgba(255, 107, 122, 0.045);
+  font-weight: var(--weight-medium);
+}
+
+.focus-mode-exit p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}

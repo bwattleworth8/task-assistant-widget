@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, nativeTheme, shell } = require("electron");
+const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, nativeTheme, screen, shell } = require("electron");
 const path = require("node:path");
 const {
   getPublicSettings,
@@ -17,10 +17,10 @@ const APP_ICON_DATA_URL =
 
 const WINDOW_MODES = {
   focus: {
-    width: 330,
-    height: 360,
-    minWidth: 280,
-    minHeight: 260
+    width: 420,
+    height: 880,
+    minWidth: 380,
+    minHeight: 560
   },
   planning: {
     width: 720,
@@ -122,6 +122,25 @@ function getWindowBoundsForMode(settings, viewMode, currentBounds = {}) {
   const modeConfig = WINDOW_MODES[viewMode];
   const savedBounds = settings.windowBoundsByMode?.[viewMode] || {};
   const legacyBounds = viewMode === "planning" ? settings.windowBounds || {} : {};
+
+  if (viewMode === "focus") {
+    const workArea = getDisplayWorkArea(currentBounds, savedBounds);
+    const margin = 8;
+    const availableWidth = Math.max(1, workArea.width - margin * 2);
+    const availableHeight = Math.max(1, workArea.height - margin * 2);
+    const width = Math.max(
+      Math.min(modeConfig.width, availableWidth),
+      Math.min(modeConfig.minWidth, availableWidth)
+    );
+
+    return {
+      x: workArea.x + margin,
+      y: workArea.y + margin,
+      width,
+      height: availableHeight
+    };
+  }
+
   const bounds = {
     ...modeConfig,
     ...legacyBounds,
@@ -134,6 +153,17 @@ function getWindowBoundsForMode(settings, viewMode, currentBounds = {}) {
     width: Math.max(bounds.width || modeConfig.width, modeConfig.minWidth),
     height: Math.max(bounds.height || modeConfig.height, modeConfig.minHeight)
   };
+}
+
+function getDisplayWorkArea(currentBounds = {}, savedBounds = {}) {
+  const displayBounds = {
+    x: currentBounds.x ?? savedBounds.x ?? 0,
+    y: currentBounds.y ?? savedBounds.y ?? 0,
+    width: currentBounds.width ?? savedBounds.width ?? WINDOW_MODES.focus.width,
+    height: currentBounds.height ?? savedBounds.height ?? WINDOW_MODES.focus.height
+  };
+
+  return screen.getDisplayMatching(displayBounds).workArea;
 }
 
 function resizeWindowForMode(viewMode) {

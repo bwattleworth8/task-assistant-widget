@@ -2,59 +2,122 @@
 
 ## Purpose
 
-This backlog captures feature ideas for evolving the Trello Focus Widget into a planning, organizing, and focus assistant. The goal is to reduce context switching and context drift by helping the user decide what to work on, stay with the chosen task, and quickly return to the right task after interruptions.
+This backlog captures ideas for evolving the Trello Focus Widget into a planning, organizing, and focus assistant. The goal is to reduce context switching and context drift by helping the user decide what to work on, stay with the chosen task, and quickly recover after interruptions.
 
-## Current Direction
+## Product Principles
 
-- **Plan Mode** should support task review, cleanup, queue building, and Trello task-management actions.
-- **Focus Mode** should stay compact and non-invasive, showing only the current task, timer, and minimal next-step controls.
-- Trello remains the source of truth for tasks, while the widget can keep lightweight personal planning state locally when that avoids changing the shared Trello board.
+- Keep Focus Mode quiet, compact, and task-centered.
+- Keep planning controls in Plan Mode.
+- Use Trello as the source of truth for task data.
+- Prefer local-only personal planning state when the feature is about attention management.
+- Make all Trello writes deliberate and visible.
 
-## Curated Improvement List
+## Implemented
 
 ### Today Queue
 
-- Let the user add tasks to work on today.
-- Queue membership should not affect the actual Trello board.
-- Tasks live inside the widget and naturally feed into Focus Mode as current focus tasks are finished or removed from focus.
-- This queue should be manually ordered so the user can decide the intended work sequence.
+- User can add tasks to a local Today Queue.
+- Queue membership does not affect Trello.
+- Today Queue is manually ordered.
+- Queue order persists locally.
+- Today Queue can suggest the next task after focus is cleared or completed.
 
 ### This Week Queue
 
-- Similar to Today Queue, but for items to work on before the end of the week.
-- Acts as a broader planning lane separate from Today Queue.
-- This is manually curated rather than automatically calendar-filtered.
+- User can add tasks to a local This Week Queue.
+- This Week Queue is independent from Today Queue.
+- A task can appear in Today, This Week, both, or neither.
+- This Week tasks can be moved into Today.
+- Queue order persists locally.
+
+### Drag-And-Drop Queue Ordering
+
+- Today and This Week queues support drag-and-drop reordering.
+- Explicit up/down controls were removed in favor of direct manipulation.
+
+### Focus Task Selection
+
+- Current Focus starts empty.
+- User chooses which task becomes the active focus.
+- Focus cannot be changed while unsaved timer time exists.
+
+### Focus Handoff
+
+- When focus is cleared or completed, the widget suggests the next item from Today Queue.
+- The suggestion is not automatically accepted.
+- Empty Today Queue returns Focus Mode to an empty state gracefully.
+
+### Time Tracking
+
+- Focus timer supports open-ended count-up sessions.
+- Stopped sessions are saved to Trello custom field `Time Spent (mins)`.
+- Timer UI uses JetBrains Mono with tabular numbers.
+
+### Task Filtering
+
+- Completed tasks are excluded.
+- Template cards are excluded.
+- Cards in `Done`, `Complete`, or `Completed` lists are hidden.
+- All Tasks excludes anything already in Focus, Today, or This Week.
+
+### Modern Dashboard Styling
+
+- Plan Mode uses a modern dashboard layout with a left navigation pane.
+- Sidebar items for Focus, Today, This Week, and All Tasks are actionable.
+- Light and dark themes are supported.
+- Typography has been tuned around Inter, Satoshi, and JetBrains Mono.
+
+## In Progress
+
+### Left-Rail Focus Mode
+
+- Focus Mode is being updated into a compact left-side rail.
+- The Electron window anchors to the left edge of the active display.
+- The rail shows the current task, timer, minimal actions, notes, and a dedicated **Exit Focus Mode** button.
+- This replaces the older focus-mode toggle while in the focused view.
+
+### Local Focus Notes
+
+- Focus Mode includes a notes field for the active task.
+- Notes are stored locally by Trello card ID.
+- Notes are not yet written to Trello.
+- Later implementation should decide whether notes become Trello comments, description appends, checklist items, or a custom field.
+
+## Planned
 
 ### Task Cleanup
 
 - Identify tasks that need attention before they can be planned or focused.
 - Useful cleanup signals:
-  - Not completed.
-  - Missing important fields.
+  - Missing due date.
   - Overdue.
-  - No due date.
-  - No assigned owner.
-  - Missing labels/status metadata.
+  - Missing labels.
+  - Missing owner.
+  - Missing status metadata.
+  - Missing estimate.
 
 ### Daily Time Summary
 
 - Show total focus time for the current day.
-- Show the number of distinct tasks worked on that day.
-- Bring this summary into Focus Mode so the user can see daily effort without opening Trello.
+- Show the number of distinct tasks worked on today.
+- Bring this summary into Focus Mode without requiring Trello to be opened.
 
 ### Pomodoro Presets
 
-- Add preset countdown modes alongside the current stopwatch mode.
-- Possible presets:
+- Add countdown options alongside the current stopwatch.
+- Candidate presets:
   - 25 minute focus session.
   - 50 minute focus session.
   - Custom countdown duration.
-- Keep the current open-ended stopwatch mode for flexible work sessions.
+- Preserve the current open-ended stopwatch mode.
 
 ### Status Adjuster
 
-- Allow the user to change a task’s status from inside the widget as work progresses.
-- This could map to Trello lists, labels, or custom fields depending on the board setup.
+- Let the user change task status from inside the widget.
+- Possible mappings:
+  - Trello list moves.
+  - Trello labels.
+  - Trello custom fields.
 - Candidate statuses:
   - Not started.
   - In progress.
@@ -62,50 +125,37 @@ This backlog captures feature ideas for evolving the Trello Focus Widget into a 
   - Blocked.
   - Done.
 
-### Quick Add for New Tasks
+### Quick Add For New Tasks
 
-- Let the user add a new Trello task from the widget.
-- Use a configured task template so new cards have consistent structure.
-- Avoid forcing the user to open Trello during a focus session just to capture a new task.
+- Let the user create a new Trello card from the widget.
+- Use a configured template to keep new cards consistent.
+- Keep quick capture available without forcing the user into Trello.
 
-## Additional Ideas To Consider Later
+### Focus Notes Trello Sync
 
-### Focus Queue Handoff
-
-- After finishing or clearing the current task, suggest the next Today Queue item.
-- The user should explicitly accept the suggestion rather than the app auto-switching focus.
-
-### Distraction Parking Lot
-
-- Provide a fast capture field for thoughts or tasks that come up during focus.
-- Captured items can become Trello cards later or remain local until reviewed.
-
-### Estimate vs. Time Spent
-
-- Add support for an `Estimate (mins)` custom field.
-- Compare estimates against `Time Spent (mins)`.
-- Highlight tasks that are running long or need replanning.
-
-### Session Notes
-
-- Let the user add a short note when stopping a timer.
-- Optionally post the note to the Trello card as a comment along with the focused minutes.
+- Persist local focus notes back to Trello when the user chooses.
+- Candidate approaches:
+  - Add a card comment.
+  - Append to card description.
+  - Write to a custom field.
+  - Create checklist items from structured notes.
 
 ### Checklist / Definition Of Done
 
 - Show Trello checklist progress in the widget.
-- In Focus Mode, show the checklist or a compact “definition of done” panel so the user knows what finished means.
+- In Focus Mode, show a compact checklist or definition-of-done area.
 
-### Context Tags
+### Estimate Vs. Time Spent
 
-- Help batch work by context, such as:
-  - Deep work.
-  - Admin.
-  - Reporting.
-  - Meetings.
-  - Waiting.
-  - Quick wins.
-- These could map to Trello labels or local-only metadata.
+- Add support for an `Estimate (mins)` custom field.
+- Compare estimate against `Time Spent (mins)`.
+- Highlight tasks that are running long or may need replanning.
+
+### Distraction Parking Lot
+
+- Provide a fast local capture field for thoughts or new work that appears during focus.
+- Review parked items later in Plan Mode.
+- Optionally convert parked items into Trello cards.
 
 ### End-Of-Day Review
 
@@ -116,20 +166,12 @@ This backlog captures feature ideas for evolving the Trello Focus Widget into a 
   - Tasks carried forward.
   - Captured distractions or quick-add tasks.
 
-## Suggested Build Order
+## Suggested Build Order From Here
 
-1. **Queues:** Today Queue and This Week Queue.
-2. **Focus Handoff:** Suggest next Today Queue item after clear/complete.
-3. **Task Cleanup:** Add a cleanup panel for missing fields, overdue cards, and unassigned cards.
-4. **Daily Time Summary:** Show focus time and distinct task count for the day.
-5. **Pomodoro Presets:** Add countdown modes.
-6. **Status Adjuster:** Add controlled Trello status updates.
-7. **Quick Add:** Add template-based new card creation.
-
-## Guiding Principles
-
-- Keep Focus Mode quiet and compact.
-- Keep planning controls in Plan Mode.
-- Avoid changing Trello board structure unless the feature explicitly requires it.
-- Prefer local-only personal planning state when the feature is about attention management rather than team workflow.
-- Make all Trello writes deliberate and visible.
+1. Finish and test the left-rail Focus Mode.
+2. Decide how local focus notes should sync to Trello.
+3. Add Daily Time Summary using saved timer sessions.
+4. Add Task Cleanup panel.
+5. Add Pomodoro presets.
+6. Add Status Adjuster.
+7. Add Quick Add.

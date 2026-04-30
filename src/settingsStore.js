@@ -11,8 +11,8 @@ const DEFAULT_SETTINGS = {
   },
   windowBoundsByMode: {
     focus: {
-      width: 330,
-      height: 360
+      width: 420,
+      height: 880
     },
     planning: {
       width: 720,

@@ -131,6 +131,21 @@
             <p id="boardName"></p>
           </section>
 
+          <header class="focus-mode-header focus-mode-only">
+            <div class="focus-window-brand">
+              <span class="brand-mark focus-brand-mark" aria-hidden="true"></span>
+              <span>Trello Focus Widget</span>
+            </div>
+            <p class="focus-mode-pill"><span aria-hidden="true"></span>Focus Mode</p>
+            <div class="focus-mode-title-row">
+              <div>
+                <h1>Focus</h1>
+                <p>Stay focused. Get things done.</p>
+              </div>
+              <button id="focusHeaderOpenButton" class="icon-button focus-header-open-button" type="button" title="Open current task" aria-label="Open current task">Open</button>
+            </div>
+          </header>
+
           <section id="focusPanel" class="focus-panel">
             <div id="focusEmpty" class="focus-empty">
               <div class="focus-heading">
@@ -176,6 +191,27 @@
               </div>
             </div>
           </section>
+
+          <section id="focusNotesPanel" class="focus-notes-panel focus-mode-only" aria-label="Focus notes">
+            <p class="eyebrow">Notes</p>
+            <p class="focus-notes-hint">Add notes or thoughts for this focus session.</p>
+            <label class="sr-only" for="focusNotesInput">Focus notes</label>
+            <textarea id="focusNotesInput" maxlength="1000" placeholder="e.g. Things to look into, blockers, ideas..."></textarea>
+            <div class="focus-notes-footer">
+              <div class="focus-notes-tools" aria-hidden="true">
+                <button type="button" tabindex="-1">B</button>
+                <button type="button" tabindex="-1">I</button>
+                <button type="button" tabindex="-1">List</button>
+                <button type="button" tabindex="-1">Link</button>
+              </div>
+              <p id="focusNotesCount">0 / 1000</p>
+            </div>
+          </section>
+
+          <div class="focus-mode-exit focus-mode-only">
+            <button id="exitFocusModeButton" class="exit-focus-button mode-button" type="button" data-view-mode="planning">Exit Focus Mode</button>
+            <p>You will return to the full app view.</p>
+          </div>
 
           <section class="toolbar" aria-label="Task controls">
             <div class="segmented-control" role="tablist" aria-label="Task filter">

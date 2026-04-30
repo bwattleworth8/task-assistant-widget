@@ -19,6 +19,9 @@ const state = {
   }
 };
 
+const FOCUS_NOTES_STORAGE_KEY = "trello-focus-widget:focus-notes";
+const FOCUS_NOTES_MAX_LENGTH = 1000;
+
 const elements = {
   setupPanel: document.querySelector("#setupPanel"),
   settingsForm: document.querySelector("#settingsForm"),
@@ -39,6 +42,7 @@ const elements = {
   boardName: document.querySelector("#boardName"),
   filterButtons: [...document.querySelectorAll(".filter-button")],
   focusPanel: document.querySelector("#focusPanel"),
+  focusHeaderOpenButton: document.querySelector("#focusHeaderOpenButton"),
   focusEmpty: document.querySelector("#focusEmpty"),
   focusActive: document.querySelector("#focusActive"),
   nextSuggestion: document.querySelector("#nextSuggestion"),
@@ -55,6 +59,8 @@ const elements = {
   clearFocusButton: document.querySelector("#clearFocusButton"),
   completeFocusButton: document.querySelector("#completeFocusButton"),
   openFocusButton: document.querySelector("#openFocusButton"),
+  focusNotesInput: document.querySelector("#focusNotesInput"),
+  focusNotesCount: document.querySelector("#focusNotesCount"),
   todayQueueCount: document.querySelector("#todayQueueCount"),
   todayQueueEmpty: document.querySelector("#todayQueueEmpty"),
   todayQueueList: document.querySelector("#todayQueueList"),
@@ -103,6 +109,8 @@ function bindEvents() {
   elements.clearFocusButton.addEventListener("click", clearFocus);
   elements.completeFocusButton.addEventListener("click", () => completeTask(state.focusTask?.id));
   elements.openFocusButton.addEventListener("click", () => openTask(state.focusTask?.url));
+  elements.focusHeaderOpenButton.addEventListener("click", () => openTask(state.focusTask?.url));
+  elements.focusNotesInput.addEventListener("input", handleFocusNotesInput);
   elements.acceptNextButton.addEventListener("click", acceptNextSuggestion);
   elements.dismissNextButton.addEventListener("click", dismissNextSuggestion);
 
@@ -986,6 +994,8 @@ function getAvailableTasks() {
 function renderFocus(task) {
   elements.focusEmpty.classList.toggle("hidden", Boolean(task));
   elements.focusActive.classList.toggle("hidden", !task);
+  elements.focusHeaderOpenButton.disabled = !task?.url;
+  renderFocusNotes(task);
 
   if (!task) {
     renderNextSuggestion();
@@ -1011,6 +1021,70 @@ function renderNextSuggestion() {
 
   elements.nextSuggestionTitle.textContent = task.name;
   renderMeta(elements.nextSuggestionMeta, task);
+}
+
+function renderFocusNotes(task) {
+  if (!elements.focusNotesInput || !elements.focusNotesCount) {
+    return;
+  }
+
+  elements.focusNotesInput.disabled = !task;
+  elements.focusNotesInput.value = task ? getFocusNote(task.id) : "";
+  elements.focusNotesInput.placeholder = task
+    ? "e.g. Things to look into, blockers, ideas..."
+    : "Choose a focus task to start notes...";
+  updateFocusNotesCount();
+}
+
+function handleFocusNotesInput() {
+  if (!state.focusTask) {
+    elements.focusNotesInput.value = "";
+    updateFocusNotesCount();
+    return;
+  }
+
+  const note = elements.focusNotesInput.value.slice(0, FOCUS_NOTES_MAX_LENGTH);
+  if (note !== elements.focusNotesInput.value) {
+    elements.focusNotesInput.value = note;
+  }
+
+  saveFocusNote(state.focusTask.id, note);
+  updateFocusNotesCount();
+}
+
+function updateFocusNotesCount() {
+  const length = elements.focusNotesInput?.value.length || 0;
+  elements.focusNotesCount.textContent = `${length} / ${FOCUS_NOTES_MAX_LENGTH}`;
+}
+
+function getFocusNote(cardId) {
+  return loadFocusNotes()[cardId] || "";
+}
+
+function saveFocusNote(cardId, note) {
+  const notes = loadFocusNotes();
+  const normalizedNote = String(note || "");
+
+  if (normalizedNote) {
+    notes[cardId] = normalizedNote;
+  } else {
+    delete notes[cardId];
+  }
+
+  try {
+    window.localStorage.setItem(FOCUS_NOTES_STORAGE_KEY, JSON.stringify(notes));
+  } catch {
+    setStatus("Could not save focus note locally.", true);
+  }
+}
+
+function loadFocusNotes() {
+  try {
+    const notes = JSON.parse(window.localStorage.getItem(FOCUS_NOTES_STORAGE_KEY) || "{}");
+    return notes && typeof notes === "object" && !Array.isArray(notes) ? notes : {};
+  } catch {
+    return {};
+  }
 }
 
 function renderTaskList(tasks) {
