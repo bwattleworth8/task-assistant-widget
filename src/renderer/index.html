@@ -4,174 +4,235 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trello Focus Widget</title>
+    <link rel="preconnect" href="https://api.fontshare.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <div class="app-shell">
-      <header class="titlebar">
-        <div>
-          <p class="eyebrow">Trello</p>
-          <h1>Focus Widget</h1>
+      <aside class="sidebar" aria-label="Workspace navigation">
+        <div class="brand-block">
+          <div class="brand-mark" aria-hidden="true"></div>
+          <div>
+            <p class="eyebrow">Trello</p>
+            <h1>Focus Widget</h1>
+          </div>
         </div>
-        <div class="window-actions">
-          <button id="topModeButton" class="secondary-button mode-button compact-mode-button top-mode-button" type="button" data-view-mode="focus" title="Focus mode" aria-label="Focus mode">Focus Mode</button>
-          <button class="icon-button theme-toggle" type="button" data-theme-toggle title="Switch theme" aria-label="Switch theme">
-            <span class="sr-only">Switch theme</span>
+
+        <nav class="sidebar-nav" aria-label="Primary">
+          <button class="sidebar-link active" type="button" data-workspace="focus">
+            <span class="nav-icon focus-icon" aria-hidden="true"></span>
+            <span>Focus</span>
           </button>
-          <button id="settingsButton" class="icon-button" type="button" title="Settings" aria-label="Settings">Settings</button>
-          <button id="hideButton" class="icon-button" type="button" title="Hide to taskbar" aria-label="Hide to taskbar">Hide</button>
-        </div>
-      </header>
+          <button class="sidebar-link" type="button" data-workspace="today">
+            <span class="nav-icon today-icon" aria-hidden="true"></span>
+            <span>Today</span>
+            <span id="sidebarTodayCount" class="count-badge">0</span>
+          </button>
+          <button class="sidebar-link" type="button" data-workspace="week">
+            <span class="nav-icon week-icon" aria-hidden="true"></span>
+            <span>This Week</span>
+            <span id="sidebarWeekCount" class="count-badge">0</span>
+          </button>
+          <button class="sidebar-link" type="button" data-filter="all" data-workspace="all">
+            <span class="nav-icon no-date-icon" aria-hidden="true"></span>
+            <span>All Tasks</span>
+            <span id="sidebarAllTasksCount" class="count-badge">0</span>
+          </button>
+        </nav>
 
-      <main>
-        <section id="setupPanel" class="setup-panel hidden" aria-live="polite">
-          <div class="section-heading">
-            <h2>Setup</h2>
-            <p id="securityStatus">Credentials stay on this computer.</p>
+        <div class="sidebar-divider"></div>
+
+        <section class="project-panel" aria-label="Projects">
+          <div class="sidebar-section-heading">
+            <span>Projects</span>
+            <span aria-hidden="true">+</span>
           </div>
+          <div id="sidebarProjectList" class="project-list"></div>
+        </section>
 
-          <form id="settingsForm" class="settings-form">
-            <label>
-              <span>Trello API key</span>
-              <input id="apiKeyInput" type="password" autocomplete="off" spellcheck="false" />
-              <span class="field-hint">Use the generated API Key from Power-Up Admin, not the API Secret.</span>
-            </label>
+        <section class="focus-tip" aria-label="Focus tip">
+          <p class="tip-title">Focus Tip</p>
+          <p>Break large tasks into smaller steps.</p>
+          <div class="tip-dots" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </section>
+      </aside>
 
-            <label>
-              <span>Trello token</span>
-              <input id="tokenInput" type="password" autocomplete="off" spellcheck="false" />
-              <span class="field-hint">Generate it from the Token link beside that same API key.</span>
-            </label>
+      <div class="workspace">
+        <header class="titlebar">
+          <div>
+            <h2>Focus</h2>
+            <p>Stay focused. Get things done.</p>
+          </div>
+          <div class="window-actions">
+            <button id="topModeButton" class="secondary-button mode-button compact-mode-button top-mode-button" type="button" data-view-mode="focus" title="Focus mode" aria-label="Focus mode">Focus Mode</button>
+            <button class="icon-button theme-toggle" type="button" data-theme-toggle title="Switch theme" aria-label="Switch theme">
+              <span class="sr-only">Switch theme</span>
+            </button>
+            <button id="settingsButton" class="icon-button settings-button" type="button" title="Settings" aria-label="Settings">Settings</button>
+            <button id="hideButton" class="icon-button overflow-button" type="button" title="Hide to taskbar" aria-label="Hide to taskbar">...</button>
+          </div>
+        </header>
 
-            <div class="form-row">
-              <button id="fetchBoardsButton" class="primary-button" type="button">Fetch boards</button>
-              <a href="https://trello.com/power-ups/admin" target="_blank" rel="noreferrer">Open Power-Up Admin</a>
+        <main>
+          <section id="setupPanel" class="setup-panel hidden" aria-live="polite">
+            <div class="section-heading">
+              <h2>Setup</h2>
+              <p id="securityStatus">Credentials stay on this computer.</p>
             </div>
 
-            <label>
-              <span>Board</span>
-              <select id="boardSelect"></select>
-            </label>
+            <form id="settingsForm" class="settings-form">
+              <label>
+                <span>Trello API key</span>
+                <input id="apiKeyInput" type="password" autocomplete="off" spellcheck="false" />
+                <span class="field-hint">Use the generated API Key from Power-Up Admin, not the API Secret.</span>
+              </label>
 
-            <label>
-              <span>Refresh every</span>
-              <select id="refreshSelect">
-                <option value="1">1 minute</option>
-                <option value="3">3 minutes</option>
-                <option value="5">5 minutes</option>
-                <option value="10">10 minutes</option>
-                <option value="15">15 minutes</option>
-              </select>
-            </label>
+              <label>
+                <span>Trello token</span>
+                <input id="tokenInput" type="password" autocomplete="off" spellcheck="false" />
+                <span class="field-hint">Generate it from the Token link beside that same API key.</span>
+              </label>
 
-            <button class="primary-button" type="submit">Save settings</button>
-          </form>
-        </section>
+              <div class="form-row">
+                <button id="fetchBoardsButton" class="primary-button" type="button">Fetch boards</button>
+                <a href="https://trello.com/power-ups/admin" target="_blank" rel="noreferrer">Open Power-Up Admin</a>
+              </div>
 
-        <section class="toolbar" aria-label="Task controls">
-          <div class="segmented-control" role="tablist" aria-label="Task filter">
-            <button class="filter-button active" type="button" data-filter="all">All</button>
-            <button class="filter-button" type="button" data-filter="due">Due</button>
-            <button class="filter-button" type="button" data-filter="overdue">Overdue</button>
-            <button class="filter-button" type="button" data-filter="none">No date</button>
-          </div>
+              <label>
+                <span>Board</span>
+                <select id="boardSelect"></select>
+              </label>
 
-          <div class="toolbar-actions">
-            <label class="toggle">
-              <input id="topToggle" type="checkbox" />
-              <span>Pin on top</span>
-            </label>
-            <button id="refreshButton" class="secondary-button" type="button">Refresh</button>
-          </div>
-        </section>
+              <label>
+                <span>Refresh every</span>
+                <select id="refreshSelect">
+                  <option value="1">1 minute</option>
+                  <option value="3">3 minutes</option>
+                  <option value="5">5 minutes</option>
+                  <option value="10">10 minutes</option>
+                  <option value="15">15 minutes</option>
+                </select>
+              </label>
 
-        <section class="status-strip" aria-live="polite">
-          <p id="statusText">Ready</p>
-          <p id="boardName"></p>
-        </section>
+              <button class="primary-button" type="submit">Save settings</button>
+            </form>
+          </section>
 
-        <section id="focusPanel" class="focus-panel">
-          <div id="focusEmpty" class="focus-empty">
-            <div class="focus-heading">
-              <p class="eyebrow">Current focus</p>
-              <div class="focus-heading-actions">
-                <button class="secondary-button mode-button compact-mode-button inline-plan-button" type="button" data-view-mode="planning">Plan Mode</button>
+          <section class="status-strip" aria-live="polite">
+            <p id="statusText">Ready</p>
+            <p id="boardName"></p>
+          </section>
+
+          <section id="focusPanel" class="focus-panel">
+            <div id="focusEmpty" class="focus-empty">
+              <div class="focus-heading">
+                <p class="eyebrow">Current Focus</p>
+                <div class="focus-heading-actions">
+                  <button class="secondary-button mode-button compact-mode-button inline-plan-button" type="button" data-view-mode="planning">Plan Mode</button>
+                </div>
+              </div>
+              <h2>No active task</h2>
+              <p>Choose a task card when you are ready to focus.</p>
+              <div id="nextSuggestion" class="next-suggestion hidden">
+                <p class="eyebrow">Next Up</p>
+                <h3 id="nextSuggestionTitle"></h3>
+                <div id="nextSuggestionMeta" class="task-meta"></div>
+                <div class="task-actions">
+                  <button id="acceptNextButton" class="primary-button" type="button">Focus this</button>
+                  <button id="dismissNextButton" class="secondary-button" type="button">Dismiss</button>
+                </div>
               </div>
             </div>
-            <h2>No active task</h2>
-            <p>Choose a task card when you are ready to focus.</p>
-            <div id="nextSuggestion" class="next-suggestion hidden">
-              <p class="eyebrow">Next up</p>
-              <h3 id="nextSuggestionTitle"></h3>
-              <div id="nextSuggestionMeta" class="task-meta"></div>
-              <div class="task-actions">
-                <button id="acceptNextButton" class="primary-button" type="button">Focus this</button>
-                <button id="dismissNextButton" class="secondary-button" type="button">Dismiss</button>
+
+            <div id="focusActive" class="hidden">
+              <div class="focus-heading">
+                <p class="eyebrow">Current Focus</p>
+                <div class="focus-heading-actions">
+                  <button class="secondary-button mode-button compact-mode-button inline-plan-button" type="button" data-view-mode="planning">Plan Mode</button>
+                </div>
+              </div>
+              <h2 id="focusTitle"></h2>
+              <div id="focusMeta" class="task-meta"></div>
+              <div class="timer-panel">
+                <p id="focusTimer" class="timer-display">00:00:00</p>
+                <p id="focusTimeTotal">Time spent: not set</p>
+              </div>
+              <div class="task-actions timer-actions">
+                <button id="startTimerButton" class="primary-button" type="button">Start Focus</button>
+                <button id="stopTimerButton" class="secondary-button" type="button" disabled>Save Elapsed</button>
+              </div>
+              <div class="task-actions focus-card-actions">
+                <button id="completeFocusButton" class="secondary-button" type="button">Complete</button>
+                <button id="openFocusButton" class="secondary-button" type="button">Open</button>
+                <button id="clearFocusButton" class="secondary-button" type="button">Clear Focus</button>
               </div>
             </div>
-          </div>
+          </section>
 
-          <div id="focusActive" class="hidden">
-            <div class="focus-heading">
-              <p class="eyebrow">Current focus</p>
-              <div class="focus-heading-actions">
-                <button class="secondary-button mode-button compact-mode-button inline-plan-button" type="button" data-view-mode="planning">Plan Mode</button>
+          <section class="toolbar" aria-label="Task controls">
+            <div class="segmented-control" role="tablist" aria-label="Task filter">
+              <button class="filter-button active" type="button" data-filter="all">All</button>
+              <button class="filter-button" type="button" data-filter="due">Due</button>
+              <button class="filter-button" type="button" data-filter="overdue">Overdue</button>
+              <button class="filter-button" type="button" data-filter="none">No date</button>
+            </div>
+
+            <div class="toolbar-actions">
+              <label class="toggle">
+                <input id="topToggle" type="checkbox" />
+                <span>Pin on top</span>
+              </label>
+              <button id="refreshButton" class="secondary-button" type="button">Refresh</button>
+            </div>
+          </section>
+
+          <div class="board-grid">
+            <section id="todaySection" class="queue-section board-column">
+              <div class="section-heading">
+                <h2>Today</h2>
+                <p id="todayQueueCount" class="count-badge">0</p>
               </div>
-            </div>
-            <h2 id="focusTitle"></h2>
-            <div id="focusMeta" class="task-meta"></div>
-            <div class="timer-panel">
-              <p id="focusTimer" class="timer-display">00:00:00</p>
-              <p id="focusTimeTotal">Time spent: not set</p>
-            </div>
-            <div class="task-actions timer-actions">
-              <button id="startTimerButton" class="primary-button" type="button">Start timer</button>
-              <button id="stopTimerButton" class="secondary-button" type="button" disabled>Stop &amp; save</button>
-            </div>
-            <div class="task-actions focus-card-actions">
-              <button id="completeFocusButton" class="secondary-button" type="button">Complete</button>
-              <button id="openFocusButton" class="secondary-button" type="button">Open</button>
-              <button id="clearFocusButton" class="secondary-button" type="button">Clear focus</button>
-            </div>
-          </div>
-        </section>
+              <div id="todayQueueEmpty" class="empty-state compact-empty">
+                <h3>No tasks queued for today</h3>
+                <p>Add tasks from the list below when you are ready to work on them.</p>
+              </div>
+              <div id="todayQueueList" class="queue-list"></div>
+            </section>
 
-        <section class="queue-section">
-          <div class="section-heading">
-            <h2>Today Queue</h2>
-            <p id="todayQueueCount">0 queued</p>
-          </div>
-          <div id="todayQueueEmpty" class="empty-state compact-empty">
-            <h3>No tasks queued for today</h3>
-            <p>Add tasks from the list below when you are ready to work on them.</p>
-          </div>
-          <div id="todayQueueList" class="queue-list"></div>
-        </section>
+            <section id="weekSection" class="queue-section board-column">
+              <div class="section-heading">
+                <h2>This Week</h2>
+                <p id="weekQueueCount" class="count-badge">0</p>
+              </div>
+              <div id="weekQueueEmpty" class="empty-state compact-empty">
+                <h3>No tasks queued for this week</h3>
+                <p>Use this as a broader holding lane for work before week&apos;s end.</p>
+              </div>
+              <div id="weekQueueList" class="queue-list"></div>
+            </section>
 
-        <section class="queue-section">
-          <div class="section-heading">
-            <h2>This Week Queue</h2>
-            <p id="weekQueueCount">0 queued</p>
+            <section id="taskListSection" class="task-list-section board-column">
+              <div class="section-heading">
+                <h2 id="taskListTitle">Tasks</h2>
+                <p id="taskCount" class="count-badge">0</p>
+              </div>
+              <div id="emptyState" class="empty-state hidden">
+                <h3>No tasks here</h3>
+                <p>Try another filter or refresh after Trello automation runs.</p>
+              </div>
+              <div id="taskList" class="task-list"></div>
+            </section>
           </div>
-          <div id="weekQueueEmpty" class="empty-state compact-empty">
-            <h3>No tasks queued for this week</h3>
-            <p>Use this as a broader holding lane for work before week&apos;s end.</p>
-          </div>
-          <div id="weekQueueList" class="queue-list"></div>
-        </section>
-
-        <section class="task-list-section">
-          <div class="section-heading">
-            <h2>Tasks</h2>
-            <p id="taskCount">0 shown</p>
-          </div>
-          <div id="emptyState" class="empty-state hidden">
-            <h3>No tasks here</h3>
-            <p>Try another filter or refresh after Trello automation runs.</p>
-          </div>
-          <div id="taskList" class="task-list"></div>
-        </section>
-      </main>
+        </main>
+      </div>
     </div>
 
     <script src="./app.js"></script>

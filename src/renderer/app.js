@@ -2,6 +2,7 @@ const state = {
   settings: null,
   tasks: [],
   activeFilter: "all",
+  workspaceView: "dashboard",
   focusTask: null,
   nextSuggestion: null,
   timer: {
@@ -60,7 +61,13 @@ const elements = {
   weekQueueCount: document.querySelector("#weekQueueCount"),
   weekQueueEmpty: document.querySelector("#weekQueueEmpty"),
   weekQueueList: document.querySelector("#weekQueueList"),
+  sidebarTodayCount: document.querySelector("#sidebarTodayCount"),
+  sidebarWeekCount: document.querySelector("#sidebarWeekCount"),
+  sidebarAllTasksCount: document.querySelector("#sidebarAllTasksCount"),
+  sidebarProjectList: document.querySelector("#sidebarProjectList"),
+  sidebarLinks: [...document.querySelectorAll(".sidebar-link")],
   taskCount: document.querySelector("#taskCount"),
+  taskListTitle: document.querySelector("#taskListTitle"),
   emptyState: document.querySelector("#emptyState"),
   taskList: document.querySelector("#taskList")
 };
@@ -110,8 +117,13 @@ function bindEvents() {
   for (const button of elements.filterButtons) {
     button.addEventListener("click", () => {
       state.activeFilter = button.dataset.filter;
+      state.workspaceView = "all";
       renderTasks();
     });
+  }
+
+  for (const link of elements.sidebarLinks) {
+    link.addEventListener("click", () => handleSidebarLink(link));
   }
 
   window.taskWidget.onRefreshRequested(loadTasks);
@@ -150,25 +162,30 @@ function syncSettingsUi() {
 
 function applyViewModeClass(viewMode) {
   const normalizedMode = viewMode === "focus" ? "focus" : "planning";
+  const focusModeEnabled = normalizedMode === "focus";
 
-  document.body.classList.toggle("focus-mode", normalizedMode === "focus");
-  document.body.classList.toggle("planning-mode", normalizedMode === "planning");
+  document.body.classList.toggle("focus-mode", focusModeEnabled);
+  document.body.classList.toggle("planning-mode", !focusModeEnabled);
 
-  elements.topModeButton.dataset.viewMode = normalizedMode === "focus" ? "planning" : "focus";
-  elements.topModeButton.textContent = normalizedMode === "focus" ? "Plan Mode" : "Focus Mode";
-  elements.topModeButton.title = normalizedMode === "focus" ? "Plan mode" : "Focus mode";
-  elements.topModeButton.setAttribute(
-    "aria-label",
-    normalizedMode === "focus" ? "Plan mode" : "Focus mode"
-  );
+  elements.topModeButton.dataset.viewMode = focusModeEnabled ? "planning" : "focus";
+  elements.topModeButton.textContent = "Focus Mode";
+  elements.topModeButton.title = focusModeEnabled ? "Exit focus mode" : "Enter focus mode";
+  elements.topModeButton.setAttribute("aria-label", elements.topModeButton.title);
+  elements.topModeButton.setAttribute("aria-pressed", String(focusModeEnabled));
 
   for (const button of elements.modeButtons) {
-    const buttonMode = button === elements.topModeButton ? normalizedMode : button.dataset.viewMode;
-    button.classList.toggle("active", buttonMode === normalizedMode);
+    if (button === elements.topModeButton) {
+      button.classList.toggle("active", focusModeEnabled);
+    } else {
+      button.classList.toggle("active", button.dataset.viewMode === normalizedMode);
+    }
   }
 }
 
 async function setViewMode(viewMode, showStatus = true) {
+  const nextViewMode = viewMode === "focus" ? "focus" : "planning";
+  state.workspaceView = nextViewMode === "focus" ? "focus" : "dashboard";
+
   try {
     state.settings = await window.taskWidget.setViewMode(viewMode);
     syncSettingsUi();
@@ -352,20 +369,60 @@ function scheduleRefresh() {
 }
 
 function renderTasks() {
+  applyWorkspaceViewClass();
+
   for (const button of elements.filterButtons) {
     button.classList.toggle("active", button.dataset.filter === state.activeFilter);
   }
 
-  const tasks = getFilteredTasks();
   reconcileFocusWithTasks();
+  const tasks = getFilteredTasks();
 
   renderFocus(state.focusTask);
   renderQueues();
   renderTaskList(tasks);
+  renderSidebar();
 
-  elements.taskCount.textContent = `${tasks.length} shown`;
+  elements.taskCount.textContent = String(tasks.length);
+  elements.taskListTitle.textContent = getTaskListTitle();
   elements.emptyState.classList.toggle("hidden", tasks.length > 0);
   elements.boardName.textContent = state.settings?.boardName || "";
+}
+
+function applyWorkspaceViewClass() {
+  document.body.dataset.workspaceView = state.workspaceView;
+}
+
+async function handleSidebarLink(link) {
+  const workspaceView = link.dataset.workspace;
+
+  if (!workspaceView) {
+    return;
+  }
+
+  if (link.dataset.filter) {
+    state.activeFilter = link.dataset.filter;
+  }
+
+  if (workspaceView === "focus") {
+    await setViewMode("focus");
+    return;
+  }
+
+  state.workspaceView = workspaceView;
+
+  if (state.settings?.viewMode === "focus") {
+    try {
+      state.settings = await window.taskWidget.setViewMode("planning");
+      syncSettingsUi();
+    } catch (error) {
+      setStatus(error.message, true);
+      return;
+    }
+  }
+
+  renderTasks();
+  setStatus(`${getWorkspaceViewLabel(workspaceView)} view.`);
 }
 
 function reconcileFocusWithTasks() {
@@ -424,7 +481,7 @@ function renderQueue(queueName, listElement, emptyElement, countElement) {
   listElement.ondragleave = (event) => handleQueueListDragLeave(event, listElement);
   listElement.ondrop = (event) => handleQueueListDrop(event, queueName, listElement);
   emptyElement.classList.toggle("hidden", tasks.length > 0);
-  countElement.textContent = `${tasks.length} queued`;
+  countElement.textContent = String(tasks.length);
 
   for (const task of tasks) {
     listElement.append(renderQueueCard(queueName, task));
@@ -621,6 +678,89 @@ function getQueueLabel(queueName) {
   return queueName === "today" ? "Today Queue" : "This Week Queue";
 }
 
+function renderSidebar() {
+  const todayCount = getQueuedTasks("today").length;
+  const weekCount = getQueuedTasks("week").length;
+  const allTasksCount = getAvailableTasks().length;
+
+  elements.sidebarTodayCount.textContent = String(todayCount);
+  elements.sidebarWeekCount.textContent = String(weekCount);
+  elements.sidebarAllTasksCount.textContent = String(allTasksCount);
+
+  for (const link of elements.sidebarLinks) {
+    link.classList.toggle("active", link.dataset.workspace === state.workspaceView);
+  }
+
+  renderProjectList();
+}
+
+function getWorkspaceViewLabel(workspaceView) {
+  if (workspaceView === "today") {
+    return "Today";
+  }
+
+  if (workspaceView === "week") {
+    return "This Week";
+  }
+
+  if (workspaceView === "all") {
+    return "All Tasks";
+  }
+
+  return "Focus";
+}
+
+function renderProjectList() {
+  elements.sidebarProjectList.innerHTML = "";
+
+  const projects = getSidebarProjects();
+  for (const [index, project] of projects.entries()) {
+    const item = document.createElement("div");
+    item.className = `project-item project-color-${(index % 5) + 1}`;
+    item.textContent = project;
+    elements.sidebarProjectList.append(item);
+  }
+
+  if (projects.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "project-item project-empty";
+    empty.textContent = "No projects yet";
+    elements.sidebarProjectList.append(empty);
+  }
+}
+
+function getSidebarProjects() {
+  const names = new Set();
+
+  for (const task of state.tasks) {
+    if (task.listName) {
+      names.add(task.listName);
+    }
+
+    for (const label of task.labels || []) {
+      names.add(label.name);
+    }
+  }
+
+  return [...names].filter(Boolean).sort((a, b) => a.localeCompare(b)).slice(0, 7);
+}
+
+function getTaskListTitle() {
+  if (state.activeFilter === "due") {
+    return "Due";
+  }
+
+  if (state.activeFilter === "overdue") {
+    return "Overdue";
+  }
+
+  if (state.activeFilter === "none") {
+    return "No Due Date";
+  }
+
+  return "All Tasks";
+}
+
 function createActionButton(label, className, onClick) {
   const button = document.createElement("button");
   button.className = className;
@@ -808,27 +948,39 @@ function updateTimerDisplay() {
 
   const hasElapsed = getTimerElapsedMs() > 0;
   elements.startTimerButton.disabled = state.timer.isRunning;
-  elements.startTimerButton.textContent = hasElapsed && !state.timer.isRunning ? "Resume timer" : "Start timer";
+  elements.startTimerButton.textContent = hasElapsed && !state.timer.isRunning ? "Resume Focus" : "Start Focus";
   elements.stopTimerButton.disabled = !state.timer.isRunning && !hasElapsed;
-  elements.stopTimerButton.textContent = state.timer.isRunning ? "Stop & save" : "Save elapsed";
+  elements.stopTimerButton.textContent = state.timer.isRunning ? "Stop & Save" : "Save Elapsed";
   elements.clearFocusButton.disabled = state.timer.isRunning || hasElapsed;
   elements.completeFocusButton.disabled = state.timer.isRunning || hasElapsed;
 }
 
 function getFilteredTasks() {
+  const tasks = getAvailableTasks();
+
   if (state.activeFilter === "all") {
-    return state.tasks;
+    return tasks;
   }
 
   if (state.activeFilter === "due") {
-    return state.tasks.filter((task) => task.due);
+    return tasks.filter((task) => task.due);
   }
 
   if (state.activeFilter === "overdue") {
-    return state.tasks.filter((task) => task.status === "overdue");
+    return tasks.filter((task) => task.status === "overdue");
   }
 
-  return state.tasks.filter((task) => !task.due);
+  return tasks.filter((task) => !task.due);
+}
+
+function getAvailableTasks() {
+  const plannedTaskIds = new Set([
+    ...getQueueIds("today"),
+    ...getQueueIds("week"),
+    ...(state.focusTask?.id ? [state.focusTask.id] : [])
+  ]);
+
+  return state.tasks.filter((task) => !plannedTaskIds.has(task.id));
 }
 
 function renderFocus(task) {
@@ -920,16 +1072,16 @@ function renderTaskList(tasks) {
 
 function renderMeta(container, task) {
   container.innerHTML = "";
-  container.append(createPill(task.listName));
+  container.append(createPill(task.listName, "list-pill"));
 
   if (task.due) {
-    container.append(createPill(formatDue(task), task.status));
+    container.append(createPill(formatDue(task), `due-pill ${task.status}`));
   } else {
-    container.append(createPill("No due date"));
+    container.append(createPill("No due date", "no-date-pill"));
   }
 
   if (task.timeSpentMins !== null) {
-    container.append(createPill(`${task.timeSpentMins} mins tracked`));
+    container.append(createPill(`${task.timeSpentMins} mins tracked`, "time-pill"));
   }
 
   for (const label of task.labels) {
