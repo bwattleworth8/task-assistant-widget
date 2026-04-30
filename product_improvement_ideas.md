@@ -56,9 +56,12 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 
 ### Daily Time Summary
 
-- Plan Mode sidebar shows total saved focus time for the current day.
+- Plan Mode sidebar shows total focus time for the current day.
 - Plan Mode sidebar shows the number of distinct tasks worked on today.
-- Summary is based on locally recorded timer sessions after Trello confirms the time save.
+- Plan Mode sidebar shows the number of tasks completed today.
+- Summary updates live while a focus timer is running.
+- Saved sessions are recorded locally after Trello confirms the time save.
+- Completed tasks are recorded locally after Trello confirms completion.
 
 ### Task Filtering
 

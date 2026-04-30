@@ -83,9 +83,12 @@ Build a local Windows desktop widget that helps plan, organize, and focus on Tre
 
 ### Daily Time Summary
 
-- Plan Mode sidebar shows total saved focus time for the current day.
+- Plan Mode sidebar shows total focus time for the current day.
 - Plan Mode sidebar shows the number of distinct tasks worked on today.
-- Summary uses locally recorded timer sessions after Trello confirms the time save.
+- Plan Mode sidebar shows the number of tasks completed today.
+- Summary updates live while a focus timer is running.
+- Saved sessions are recorded locally after Trello confirms the time save.
+- Completed tasks are recorded locally after Trello confirms completion.
 
 ### Focus Notes Trello Comments
 
@@ -146,7 +149,8 @@ Notes are stored by Trello card ID in browser `localStorage` while drafting. Whe
 - Verify Focus Mode anchors to the left side and can exit back to full Plan Mode.
 - Verify Plan Mode keeps the sidebar fixed while only the workspace scrolls.
 - Verify the Lists section scrolls independently above the Daily Summary when many lists are present.
-- Verify saving focus time updates Daily Summary total time and distinct task count.
+- Verify running and saving focus time update Daily Summary total time and distinct task count.
+- Verify completing tasks updates the Daily Summary completed-task count for the current day.
 - Verify light mode keeps dashboard, task cards, controls, sidebar, and Focus Mode surfaces legible.
 - Verify focus note toolbar buttons format selected text or insert Markdown-style scaffolds.
 - Verify clearing, completing, or replacing focus writes non-empty notes to Trello comments.

@@ -22,8 +22,10 @@ const state = {
 
 const FOCUS_NOTES_STORAGE_KEY = "trello-focus-widget:focus-notes";
 const FOCUS_SESSIONS_STORAGE_KEY = "trello-focus-widget:focus-sessions";
+const COMPLETED_TASKS_STORAGE_KEY = "trello-focus-widget:completed-tasks";
 const FOCUS_NOTES_MAX_LENGTH = 1000;
 const MAX_STORED_FOCUS_SESSIONS = 500;
+const MAX_STORED_COMPLETED_TASKS = 500;
 const DUE_SOON_DAYS = 3;
 
 const elements = {
@@ -79,6 +81,8 @@ const elements = {
   dailySummaryTime: document.querySelector("#dailySummaryTime"),
   dailySummaryTasks: document.querySelector("#dailySummaryTasks"),
   dailySummaryTaskLabel: document.querySelector("#dailySummaryTaskLabel"),
+  dailySummaryCompleted: document.querySelector("#dailySummaryCompleted"),
+  dailySummaryCompletedLabel: document.querySelector("#dailySummaryCompletedLabel"),
   sidebarLinks: [...document.querySelectorAll(".sidebar-link")],
   workspaceTitle: document.querySelector("#workspaceTitle"),
   workspaceSubtitle: document.querySelector("#workspaceSubtitle"),
@@ -769,17 +773,23 @@ function renderSidebar() {
 }
 
 function renderDailyTimeSummary() {
-  if (!elements.dailySummaryTime || !elements.dailySummaryTasks) {
+  if (!elements.dailySummaryTime || !elements.dailySummaryTasks || !elements.dailySummaryCompleted) {
     return;
   }
 
   const summary = getTodayFocusSummary();
   elements.dailySummaryTime.textContent = formatSummaryDuration(summary.totalMinutes);
   elements.dailySummaryTasks.textContent = String(summary.distinctTaskCount);
+  elements.dailySummaryCompleted.textContent = String(summary.completedTaskCount);
 
   if (elements.dailySummaryTaskLabel) {
     elements.dailySummaryTaskLabel.textContent =
       summary.distinctTaskCount === 1 ? "task worked" : "tasks worked";
+  }
+
+  if (elements.dailySummaryCompletedLabel) {
+    elements.dailySummaryCompletedLabel.textContent =
+      summary.completedTaskCount === 1 ? "task completed" : "tasks completed";
   }
 }
 
@@ -1129,9 +1139,43 @@ function getTodayFocusSummary() {
     distinctTaskIds.add(session.cardId);
   }
 
+  const activeSession = getActiveFocusSessionSummary(todayKey);
+  if (activeSession.minutes > 0) {
+    totalMinutes += activeSession.minutes;
+    distinctTaskIds.add(activeSession.cardId);
+  }
+
   return {
     totalMinutes,
-    distinctTaskCount: distinctTaskIds.size
+    distinctTaskCount: distinctTaskIds.size,
+    completedTaskCount: getCompletedTaskCountForDay(todayKey)
+  };
+}
+
+function getActiveFocusSessionSummary(todayKey) {
+  if (!state.timer.isRunning || !state.focusTask?.id) {
+    return {
+      cardId: null,
+      minutes: 0
+    };
+  }
+
+  const startedAt = new Date(state.timer.startedAt);
+  const todayStart = getLocalDayStart(new Date());
+  const elapsedMs = getTimerElapsedMs();
+  const activeTodayMs =
+    getLocalDayKey(startedAt) === todayKey ? elapsedMs : Date.now() - todayStart.getTime();
+
+  if (activeTodayMs <= 0) {
+    return {
+      cardId: null,
+      minutes: 0
+    };
+  }
+
+  return {
+    cardId: state.focusTask.id,
+    minutes: Math.max(1, Math.ceil(activeTodayMs / 60000))
   };
 }
 
@@ -1181,6 +1225,80 @@ function saveFocusSessions(sessions) {
   }
 }
 
+function recordCompletedTask(task) {
+  const cardId = String(task?.id || "").trim();
+  if (!cardId) {
+    return;
+  }
+
+  const completedAt = new Date();
+  const completedTasks = loadCompletedTasks();
+  completedTasks.push({
+    cardId,
+    taskName: task?.name || "Untitled task",
+    completedAt: completedAt.toISOString(),
+    dayKey: getLocalDayKey(completedAt)
+  });
+
+  saveCompletedTasks(completedTasks.slice(-MAX_STORED_COMPLETED_TASKS));
+}
+
+function getCompletedTaskCountForDay(dayKey) {
+  return loadCompletedTasks().filter((task) => getCompletedTaskDayKey(task) === dayKey).length;
+}
+
+function loadCompletedTasks() {
+  try {
+    const completedTasks = JSON.parse(window.localStorage.getItem(COMPLETED_TASKS_STORAGE_KEY) || "[]");
+    if (!Array.isArray(completedTasks)) {
+      return [];
+    }
+
+    return completedTasks
+      .map(normalizeCompletedTask)
+      .filter(Boolean)
+      .slice(-MAX_STORED_COMPLETED_TASKS);
+  } catch {
+    return [];
+  }
+}
+
+function normalizeCompletedTask(task) {
+  if (!task || typeof task !== "object") {
+    return null;
+  }
+
+  const cardId = String(task.cardId || "").trim();
+  const completedAt = String(task.completedAt || "").trim();
+
+  if (!cardId || !completedAt) {
+    return null;
+  }
+
+  return {
+    cardId,
+    taskName: String(task.taskName || "Untitled task"),
+    completedAt,
+    dayKey: String(task.dayKey || "")
+  };
+}
+
+function saveCompletedTasks(completedTasks) {
+  try {
+    window.localStorage.setItem(COMPLETED_TASKS_STORAGE_KEY, JSON.stringify(completedTasks));
+  } catch {
+    setStatus("Could not save completed task history locally.", true);
+  }
+}
+
+function getCompletedTaskDayKey(task) {
+  if (task.dayKey) {
+    return task.dayKey;
+  }
+
+  return getLocalDayKey(new Date(task.completedAt));
+}
+
 function getFocusSessionDayKey(session) {
   if (session.dayKey) {
     return session.dayKey;
@@ -1198,6 +1316,12 @@ function getLocalDayKey(date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function getLocalDayStart(date) {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  return start;
 }
 
 function resetTimer() {
@@ -1226,6 +1350,7 @@ function updateTimerDisplay() {
   elements.focusTimer.textContent = formatDuration(getTimerElapsedMs());
 
   if (!state.focusTask) {
+    renderDailyTimeSummary();
     return;
   }
 
@@ -1236,6 +1361,7 @@ function updateTimerDisplay() {
   elements.stopTimerButton.textContent = state.timer.isRunning ? "Stop & Save" : "Save Elapsed";
   elements.clearFocusButton.disabled = state.timer.isRunning || hasElapsed;
   elements.completeFocusButton.disabled = state.timer.isRunning || hasElapsed;
+  renderDailyTimeSummary();
 }
 
 function getFilteredTasks() {
@@ -1654,6 +1780,10 @@ async function completeTask(cardId) {
   }
 
   const completingFocusTask = cardId === state.focusTask?.id;
+  const completedTask =
+    state.tasks.find((task) => task.id === cardId) ||
+    (completingFocusTask ? state.focusTask : null) ||
+    { id: cardId };
 
   if (completingFocusTask && (state.timer.isRunning || state.timer.elapsedMs > 0)) {
     setStatus("Save the current timer before completing this task.", true);
@@ -1673,6 +1803,7 @@ async function completeTask(cardId) {
     if (result?.settings) {
       state.settings = result.settings;
     }
+    recordCompletedTask(completedTask);
     state.tasks = state.tasks.filter((task) => task.id !== cardId);
     if (completingFocusTask) {
       state.focusTask = null;
