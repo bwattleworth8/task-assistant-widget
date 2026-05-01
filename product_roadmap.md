@@ -1,8 +1,8 @@
-# Trello Focus Widget Product Roadmap
+# Work Slate Product Roadmap
 
 ## Product Goal
 
-Build a local Windows desktop widget that helps plan, organize, and focus on Trello tasks without constantly opening Trello. The widget should make it easy to choose what matters now, stay with the current task, and move back into planning only when needed.
+Build a local Windows desktop app that helps plan, organize, and focus on Trello tasks without constantly opening Trello. Work Slate should make it easy to choose what matters now, stay with the current task, and move back into planning only when needed.
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@ Build a local Windows desktop widget that helps plan, organize, and focus on Tre
 
 ## Implemented Milestones
 
-### Initial Electron Widget
+### Initial Electron App
 
 - Created the Electron app scaffold.
 - Added setup/settings flow for Trello API key, token, board fetch, and board selection.
@@ -108,7 +108,7 @@ Build a local Windows desktop widget that helps plan, organize, and focus on Tre
 - The created card start date is automatically set to the current date.
 - The created card `Status` custom field is automatically set to `To do`.
 - New cards are created by copying the configured template with full source-copy behavior.
-- After Trello creation succeeds, the widget refreshes tasks and prompts for Focus, Today, This Week, or All Tasks routing.
+- After Trello creation succeeds, Work Slate refreshes tasks and prompts for Focus, Today, This Week, or All Tasks routing.
 - Routing to All Tasks makes no local queue or focus change.
 - Routing to Today or This Week updates the local queue only after Trello confirms card creation.
 - Routing to Focus is blocked while a timer is running or has unsaved elapsed time.
@@ -138,13 +138,13 @@ Notes are stored by Trello card ID in browser `localStorage` while drafting. Whe
 - Focus notes are written to Trello as card comments when focus ends.
 - Quick Add writes to Trello by creating a card from the configured template.
 - Time tracking writes to a number custom field named `Time Spent (mins)`.
-- Queue membership, queue order, draft focus notes, theme, and view mode are local widget state.
-- The widget should make Trello writes deliberate and visible.
+- Queue membership, queue order, draft focus notes, theme, and view mode are local app state.
+- Work Slate should make Trello writes deliberate and visible.
 
 ## Roadmap Backlog
 
 1. **Task Cleanup panel:** identify cards with missing due dates, missing labels, overdue state, or other planning gaps.
-2. **Status Adjuster:** update task status from the widget, likely through list moves, labels, or custom fields.
+2. **Status Adjuster:** update task status from Work Slate, likely through list moves, labels, or custom fields.
 3. **Checklist / Definition Of Done:** show checklist progress in Focus Mode.
 4. **LLM Planning Assistant:** add a read-only Plan Mode advisor for daily planning, next-task suggestions, cleanup review, and task-context Q&A.
 
@@ -190,5 +190,5 @@ Notes are stored by Trello card ID in browser `localStorage` while drafting. Whe
 - v1 targets Windows desktop behavior first.
 - The selected Trello board contains the tasks to show.
 - Existing Trello automation reacts to `dueComplete=true`.
-- Local queue and focus note state are personal to this widget installation.
+- Local queue and focus note state are personal to this Work Slate installation.
 - General Trello editing, checklist editing, and multi-board aggregation remain future work.

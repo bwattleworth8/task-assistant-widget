@@ -52,7 +52,7 @@ function createWindow() {
     minWidth: modeConfig.minWidth,
     minHeight: modeConfig.minHeight,
     alwaysOnTop: Boolean(settings.alwaysOnTop),
-    title: "Trello Focus Widget",
+    title: "Work Slate",
     icon: createAppIcon(),
     autoHideMenuBar: true,
     backgroundColor: getWindowBackgroundColor(settings.theme),
@@ -255,8 +255,8 @@ function createTray() {
   const trayIcon = createAppIcon(16);
 
   tray = new Tray(trayIcon);
-  tray.setTitle("Trello");
-  tray.setToolTip("Trello Focus Widget");
+  tray.setTitle("Work Slate");
+  tray.setToolTip("Work Slate");
   tray.setContextMenu(buildTrayMenu());
   tray.on("click", () => {
     showMainWindow();
@@ -268,7 +268,7 @@ function buildTrayMenu() {
 
   return Menu.buildFromTemplate([
     {
-      label: "Show Widget",
+      label: "Show Work Slate",
       click: showMainWindow
     },
     {
@@ -651,7 +651,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle("shell:openExternal", (_event, url) => {
     if (!/^https:\/\/trello\.com\//.test(String(url))) {
-      throw new Error("Only Trello links can be opened from the widget.");
+      throw new Error("Only Trello links can be opened from Work Slate.");
     }
 
     return shell.openExternal(url);
@@ -687,8 +687,8 @@ function registerIpcHandlers() {
 }
 
 app.whenReady().then(() => {
-  app.setName("Trello Focus Widget");
-  app.setAppUserModelId("com.local.trello-focus-widget");
+  app.setName("Work Slate");
+  app.setAppUserModelId("com.local.work-slate");
   applyNativeTheme(loadSettings().theme);
   Menu.setApplicationMenu(null);
   registerIpcHandlers();

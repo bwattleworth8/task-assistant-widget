@@ -1,6 +1,8 @@
-# Trello Focus Widget
+# Work Slate
 
-A lightweight Electron desktop widget for planning, organizing, and focusing on tasks from one Trello board.
+Your daily console for planning, focus, and work clarity.
+
+Work Slate is a lightweight Electron desktop app for planning, organizing, and focusing on tasks from one Trello board.
 
 The app is built for three related workflows:
 
@@ -42,7 +44,7 @@ Build the Windows installer:
 npm run dist
 ```
 
-The installer is written to `dist/Trello Focus Widget Setup 0.1.0.exe`. This local installer is currently unsigned, so Windows may show a trust warning. `npm run pack` creates an unpacked Windows app in `dist/win-unpacked` for quick local inspection.
+The installer is written to `dist/Work Slate Setup 0.1.0.exe`. This local installer is currently unsigned, so Windows may show a trust warning. `npm run pack` creates an unpacked Windows app in `dist/win-unpacked` for quick local inspection.
 
 ## Trello Setup
 
@@ -51,7 +53,7 @@ The installer is written to `dist/Trello Focus Widget Setup 0.1.0.exe`. This loc
 3. Generate an API key.
 4. Use the generated **API Key**, not the API Secret.
 5. Use the Token link beside that API key to generate a Trello token.
-6. Enter the API key and token in the widget settings.
+6. Enter the API key and token in Work Slate settings.
 7. Fetch boards and select the board that contains the tasks to display.
 
 Credentials are saved locally. When Electron `safeStorage` encryption is available, credentials are encrypted before being written to the app settings file.
@@ -111,7 +113,7 @@ Credentials are saved locally. When Electron `safeStorage` encryption is availab
 
 ## Local State
 
-The widget stores local state in Electron user data:
+Work Slate stores local state in Electron user data:
 
 - Selected board.
 - Refresh interval.
@@ -128,7 +130,7 @@ Credentials use Electron `safeStorage` when available. Focus notes currently use
 
 ## Trello Writes
 
-The widget currently writes to Trello only for explicit user actions:
+Work Slate currently writes to Trello only for explicit user actions:
 
 - Complete task: sets `dueComplete=true`.
 - Save elapsed focus time: updates `Time Spent (mins)`.

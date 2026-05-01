@@ -3,6 +3,8 @@ const path = require("node:path");
 const { app, safeStorage } = require("electron");
 
 const SETTINGS_FILE = "settings.json";
+const LEGACY_APP_NAME = "Trello Focus Widget";
+let legacySettingsMigrationChecked = false;
 
 const DEFAULT_SETTINGS = {
   windowBounds: {
@@ -38,7 +40,34 @@ const DEFAULT_SETTINGS = {
 };
 
 function getSettingsPath() {
-  return path.join(app.getPath("userData"), SETTINGS_FILE);
+  const settingsPath = path.join(app.getPath("userData"), SETTINGS_FILE);
+  migrateLegacySettings(settingsPath);
+  return settingsPath;
+}
+
+function migrateLegacySettings(settingsPath) {
+  if (legacySettingsMigrationChecked) {
+    return;
+  }
+
+  legacySettingsMigrationChecked = true;
+
+  if (fs.existsSync(settingsPath)) {
+    return;
+  }
+
+  const legacySettingsPath = path.join(app.getPath("appData"), LEGACY_APP_NAME, SETTINGS_FILE);
+
+  if (!fs.existsSync(legacySettingsPath)) {
+    return;
+  }
+
+  try {
+    fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
+    fs.copyFileSync(legacySettingsPath, settingsPath);
+  } catch {
+    // If migration fails, fall back to default settings instead of blocking startup.
+  }
 }
 
 function readJson(filePath) {

@@ -1,7 +1,7 @@
 {
-  "name": "trello-focus-widget",
+  "name": "work-slate",
   "version": "0.1.0",
-  "description": "A lightweight Windows desktop widget for staying focused on Trello tasks.",
+  "description": "Your daily console for planning, focus, and work clarity.",
   "main": "src/main.js",
   "private": true,
   "scripts": {
@@ -12,8 +12,8 @@
     "dist": "npm run icons && electron-builder --win nsis"
   },
   "build": {
-    "appId": "com.local.trello-focus-widget",
-    "productName": "Trello Focus Widget",
+    "appId": "com.local.work-slate",
+    "productName": "Work Slate",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -43,7 +43,7 @@
       "createStartMenuShortcut": true,
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
-      "shortcutName": "Trello Focus Widget"
+      "shortcutName": "Work Slate"
     }
   },
   "devDependencies": {

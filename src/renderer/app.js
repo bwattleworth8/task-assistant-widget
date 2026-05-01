@@ -32,9 +32,12 @@ const state = {
   }
 };
 
-const FOCUS_NOTES_STORAGE_KEY = "trello-focus-widget:focus-notes";
-const FOCUS_SESSIONS_STORAGE_KEY = "trello-focus-widget:focus-sessions";
-const COMPLETED_TASKS_STORAGE_KEY = "trello-focus-widget:completed-tasks";
+const LEGACY_FOCUS_NOTES_STORAGE_KEY = "trello-focus-widget:focus-notes";
+const LEGACY_FOCUS_SESSIONS_STORAGE_KEY = "trello-focus-widget:focus-sessions";
+const LEGACY_COMPLETED_TASKS_STORAGE_KEY = "trello-focus-widget:completed-tasks";
+const FOCUS_NOTES_STORAGE_KEY = "work-slate:focus-notes";
+const FOCUS_SESSIONS_STORAGE_KEY = "work-slate:focus-sessions";
+const COMPLETED_TASKS_STORAGE_KEY = "work-slate:completed-tasks";
 const FOCUS_NOTES_MAX_LENGTH = 1000;
 const MAX_STORED_FOCUS_SESSIONS = 500;
 const MAX_STORED_COMPLETED_TASKS = 500;
@@ -135,6 +138,7 @@ const elements = {
 };
 
 async function init() {
+  migrateLegacyLocalStorage();
   bindEvents();
   state.settings = await window.taskWidget.getSettings();
   syncSettingsUi();
@@ -152,6 +156,29 @@ async function init() {
   await loadTasks();
   await loadQuickAddOptions();
   scheduleRefresh();
+}
+
+function migrateLegacyLocalStorage() {
+  const storageMigrations = [
+    [LEGACY_FOCUS_NOTES_STORAGE_KEY, FOCUS_NOTES_STORAGE_KEY],
+    [LEGACY_FOCUS_SESSIONS_STORAGE_KEY, FOCUS_SESSIONS_STORAGE_KEY],
+    [LEGACY_COMPLETED_TASKS_STORAGE_KEY, COMPLETED_TASKS_STORAGE_KEY]
+  ];
+
+  try {
+    for (const [legacyKey, currentKey] of storageMigrations) {
+      if (window.localStorage.getItem(currentKey) !== null) {
+        continue;
+      }
+
+      const legacyValue = window.localStorage.getItem(legacyKey);
+      if (legacyValue !== null) {
+        window.localStorage.setItem(currentKey, legacyValue);
+      }
+    }
+  } catch {
+    // If localStorage is unavailable, continue with empty local planning history.
+  }
 }
 
 function bindEvents() {
@@ -937,7 +964,7 @@ function renderWorkspaceHeader() {
   const copy = {
     dashboard: {
       title: "Home",
-      subtitle: "Plan today, shape the week, and choose your next focus."
+      subtitle: "Your daily console for planning, focus, and work clarity."
     },
     today: {
       title: "Today",

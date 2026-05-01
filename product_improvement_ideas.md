@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This backlog captures ideas for evolving the Trello Focus Widget into a planning, organizing, and focus assistant. The goal is to reduce context switching and context drift by helping the user decide what to work on, stay with the chosen task, and quickly recover after interruptions.
+This backlog captures ideas for evolving Work Slate into a planning, organizing, and focus assistant. The goal is to reduce context switching and context drift by helping the user decide what to work on, stay with the chosen task, and quickly recover after interruptions.
 
 ## Product Principles
 
@@ -43,7 +43,7 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 
 ### Focus Handoff
 
-- When focus is cleared or completed, the widget suggests the next item from Today Queue.
+- When focus is cleared or completed, Work Slate suggests the next item from Today Queue.
 - The suggestion is not automatically accepted.
 - Empty Today Queue returns Focus Mode to an empty state gracefully.
 
@@ -117,7 +117,7 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 - Electron Builder is configured for a local Windows NSIS installer.
 - Build scripts generate `build/icon.png` and `build/icon.ico` from the embedded app icon.
 - `npm run pack` builds an unpacked Windows app folder for quick inspection.
-- `npm run dist` builds `dist/Trello Focus Widget Setup 0.1.0.exe`.
+- `npm run dist` builds `dist/Work Slate Setup 0.1.0.exe`.
 - Installer configuration creates Start Menu and desktop shortcuts.
 - The current local installer is unsigned.
 
@@ -136,7 +136,7 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 
 ### Status Adjuster
 
-- Let the user change task status from inside the widget.
+- Let the user change task status from inside Work Slate.
 - Possible mappings:
   - Trello list moves.
   - Trello labels.
@@ -150,7 +150,7 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 
 ### Checklist / Definition Of Done
 
-- Show Trello checklist progress in the widget.
+- Show Trello checklist progress in Work Slate.
 - In Focus Mode, show a compact checklist or definition-of-done area.
 
 ### Estimate Vs. Time Spent
