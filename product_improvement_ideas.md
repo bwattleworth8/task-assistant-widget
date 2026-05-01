@@ -112,6 +112,15 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 - After creation, the task can be routed to Focus, Today, This Week, or left in All Tasks.
 - Trello failures leave local queues and focus unchanged.
 
+### Local Personal Windows Installer
+
+- Electron Builder is configured for a local Windows NSIS installer.
+- Build scripts generate `build/icon.png` and `build/icon.ico` from the embedded app icon.
+- `npm run pack` builds an unpacked Windows app folder for quick inspection.
+- `npm run dist` builds `dist/Trello Focus Widget Setup 0.1.0.exe`.
+- Installer configuration creates Start Menu and desktop shortcuts.
+- The current local installer is unsigned.
+
 ## Planned
 
 ### Task Cleanup
@@ -174,9 +183,38 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 - Future enhancement could add explicit one-click action buttons for recommended changes.
 - OpenAI API is the likely future provider, but integration is deferred.
 
+### Application Distribution And Legitimacy
+
+- Package the Electron app as a normal Windows application so it can be installed, launched from the Start Menu, pinned to the taskbar, and shared with non-technical users.
+- Use `electron-builder` with the Windows NSIS installer target as the initial packaging path.
+- Preserve stable application identity early:
+  - `appId`.
+  - `productName`.
+  - Installer name.
+  - Application icon.
+  - Version numbering convention.
+- Stage 2: Coworker-friendly installer.
+  - Replace the generated starter icon with a polished app icon and installer metadata.
+  - Verify the app does not require Node, npm, or the source project folder on the coworker's machine.
+  - Document first-run Trello setup requirements.
+  - Test install, launch, uninstall, and reinstall flows on a clean Windows profile or machine.
+- Stage 3: More legitimate release process.
+  - Decide where official release artifacts will live, such as GitHub Releases or another controlled download location.
+  - Introduce repeatable versioning and release notes.
+  - Consider CI-based builds once manual packaging becomes repetitive.
+  - Evaluate Windows code signing to reduce SmartScreen warnings and improve user trust.
+- Stage 4: Auto-update readiness.
+  - Add `electron-updater` only after the basic installer and release process are stable.
+  - Configure a publish provider for update metadata and installer artifacts.
+  - Generate and publish update metadata such as `latest.yml`.
+  - Add a minimal update check from Electron's main process.
+  - Keep updater behavior explicit and observable at first before adding more automated update UX.
+
 ## Suggested Build Order From Here
 
 1. Add Task Cleanup panel.
 2. Add Status Adjuster.
 3. Add Checklist / Definition Of Done.
 4. Add LLM Planning Assistant.
+5. Add coworker-friendly installer polish.
+6. Add release process, code signing evaluation, and auto-update readiness.

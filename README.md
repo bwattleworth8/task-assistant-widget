@@ -28,6 +28,22 @@ The app is built for three related workflows:
    npm run check
    ```
 
+## How To Build A Windows Installer
+
+Run the local validation checks first:
+
+```powershell
+npm run check
+```
+
+Build the Windows installer:
+
+```powershell
+npm run dist
+```
+
+The installer is written to `dist/Trello Focus Widget Setup 0.1.0.exe`. This local installer is currently unsigned, so Windows may show a trust warning. `npm run pack` creates an unpacked Windows app in `dist/win-unpacked` for quick local inspection.
+
 ## Trello Setup
 
 1. Go to https://trello.com/power-ups/admin.
@@ -127,7 +143,13 @@ See [product_roadmap.md](product_roadmap.md) for planned product work and valida
 
 ```powershell
 npm start
+npm run icons
 npm run check
+npm run pack
+npm run dist
 ```
 
+`npm run icons` regenerates `build/icon.png` and `build/icon.ico` from the embedded app icon.
 `npm run check` performs syntax checks for the Electron main process, preload bridge, settings store, Trello client, and renderer script.
+`npm run pack` builds an unpacked Windows app folder.
+`npm run dist` builds the local Windows installer with Electron Builder.

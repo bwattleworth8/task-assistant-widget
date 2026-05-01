@@ -6,9 +6,48 @@
   "private": true,
   "scripts": {
     "start": "node scripts/start-electron.js",
-    "check": "node --check scripts/start-electron.js && node --check src/main.js && node --check src/preload.js && node --check src/settingsStore.js && node --check src/trelloClient.js && node --check src/renderer/app.js"
+    "icons": "node scripts/generate-icons.js",
+    "check": "node --check scripts/start-electron.js && node --check scripts/generate-icons.js && node --check src/main.js && node --check src/preload.js && node --check src/settingsStore.js && node --check src/trelloClient.js && node --check src/renderer/app.js",
+    "pack": "npm run icons && electron-builder --dir",
+    "dist": "npm run icons && electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.local.trello-focus-widget",
+    "productName": "Trello Focus Widget",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "artifactName": "${productName} Setup ${version}.${ext}",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "shortcutName": "Trello Focus Widget"
+    }
   },
   "devDependencies": {
-    "electron": "^39.2.6"
+    "electron": "^39.2.6",
+    "electron-builder": "^26.8.1"
   }
 }
