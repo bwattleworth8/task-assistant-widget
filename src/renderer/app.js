@@ -10,7 +10,10 @@ const state = {
     isRunning: false,
     startedAt: null,
     elapsedMs: 0,
-    intervalId: null
+    intervalId: null,
+    mode: "stopwatch",
+    customMinutes: 25,
+    completed: false
   },
   refreshTimer: null,
   knownBoards: [],
@@ -36,6 +39,15 @@ const FOCUS_NOTES_MAX_LENGTH = 1000;
 const MAX_STORED_FOCUS_SESSIONS = 500;
 const MAX_STORED_COMPLETED_TASKS = 500;
 const DUE_SOON_DAYS = 3;
+const TIMER_MODES = {
+  stopwatch: null,
+  "pomodoro-25": 25,
+  "pomodoro-50": 50,
+  "pomodoro-custom": null
+};
+const DEFAULT_CUSTOM_POMODORO_MINUTES = 25;
+const MIN_CUSTOM_POMODORO_MINUTES = 1;
+const MAX_CUSTOM_POMODORO_MINUTES = 240;
 
 const elements = {
   setupPanel: document.querySelector("#setupPanel"),
@@ -71,6 +83,8 @@ const elements = {
   focusMeta: document.querySelector("#focusMeta"),
   focusTimer: document.querySelector("#focusTimer"),
   focusTimeTotal: document.querySelector("#focusTimeTotal"),
+  timerModeButtons: [...document.querySelectorAll("[data-timer-mode]")],
+  pomodoroCustomInput: document.querySelector("#pomodoroCustomInput"),
   startTimerButton: document.querySelector("#startTimerButton"),
   stopTimerButton: document.querySelector("#stopTimerButton"),
   clearFocusButton: document.querySelector("#clearFocusButton"),
@@ -162,6 +176,10 @@ function bindEvents() {
   elements.completeFocusButton.addEventListener("click", () => completeTask(state.focusTask?.id));
   elements.openFocusButton.addEventListener("click", () => openTask(state.focusTask?.url));
   elements.focusHeaderOpenButton.addEventListener("click", () => openTask(state.focusTask?.url));
+  for (const button of elements.timerModeButtons) {
+    button.addEventListener("click", () => setTimerMode(button.dataset.timerMode));
+  }
+  elements.pomodoroCustomInput.addEventListener("change", handlePomodoroCustomChange);
   elements.focusNotesInput.addEventListener("input", handleFocusNotesInput);
   for (const button of elements.focusNoteFormatButtons) {
     button.addEventListener("click", () => applyNoteFormat(button.dataset.noteFormat));
@@ -1579,6 +1597,12 @@ async function startFocusTimer() {
     return;
   }
 
+  const durationMs = getTimerDurationMs();
+  if (durationMs && getTimerElapsedMs() >= durationMs) {
+    setStatus("Save elapsed Pomodoro time before starting another session.", true);
+    return;
+  }
+
   if (state.settings?.viewMode !== "focus") {
     const enteredFocusMode = await setViewMode("focus", false);
     if (!enteredFocusMode) {
@@ -1588,9 +1612,10 @@ async function startFocusTimer() {
 
   state.timer.isRunning = true;
   state.timer.startedAt = Date.now();
+  state.timer.completed = false;
   state.timer.intervalId = window.setInterval(updateTimerDisplay, 1000);
   renderFocus(state.focusTask);
-  setStatus("Timer running.");
+  setStatus(durationMs ? "Pomodoro running." : "Timer running.");
 }
 
 async function stopFocusTimerAndSave() {
@@ -1869,25 +1894,149 @@ function resetTimer() {
     window.clearInterval(state.timer.intervalId);
   }
 
+  const mode = normalizeTimerMode(state.timer.mode);
+  const customMinutes = normalizeCustomPomodoroMinutes(state.timer.customMinutes);
+
   state.timer = {
     isRunning: false,
     startedAt: null,
     elapsedMs: 0,
-    intervalId: null
+    intervalId: null,
+    mode,
+    customMinutes,
+    completed: false
   };
   updateTimerDisplay();
 }
 
 function getTimerElapsedMs() {
+  let elapsedMs = state.timer.elapsedMs;
+
   if (!state.timer.isRunning) {
-    return state.timer.elapsedMs;
+    return getCappedTimerElapsedMs(elapsedMs);
   }
 
-  return state.timer.elapsedMs + (Date.now() - state.timer.startedAt);
+  elapsedMs += Date.now() - state.timer.startedAt;
+  return getCappedTimerElapsedMs(elapsedMs);
+}
+
+function getCappedTimerElapsedMs(elapsedMs) {
+  const durationMs = getTimerDurationMs();
+  if (!durationMs) {
+    return Math.max(0, elapsedMs);
+  }
+
+  return Math.min(Math.max(0, elapsedMs), durationMs);
+}
+
+function getTimerDurationMs() {
+  const durationMinutes = getTimerDurationMinutes();
+  return durationMinutes ? durationMinutes * 60000 : null;
+}
+
+function getTimerDurationMinutes() {
+  const mode = normalizeTimerMode(state.timer.mode);
+  if (mode === "pomodoro-custom") {
+    return normalizeCustomPomodoroMinutes(state.timer.customMinutes);
+  }
+
+  return TIMER_MODES[mode];
+}
+
+function getTimerDisplayMs() {
+  const durationMs = getTimerDurationMs();
+  const elapsedMs = getTimerElapsedMs();
+
+  return durationMs ? Math.max(0, durationMs - elapsedMs) : elapsedMs;
+}
+
+function normalizeTimerMode(timerMode) {
+  return Object.prototype.hasOwnProperty.call(TIMER_MODES, timerMode) ? timerMode : "stopwatch";
+}
+
+function normalizeCustomPomodoroMinutes(minutes) {
+  const normalizedMinutes = Math.round(Number(minutes));
+  if (!Number.isFinite(normalizedMinutes)) {
+    return DEFAULT_CUSTOM_POMODORO_MINUTES;
+  }
+
+  return Math.min(
+    Math.max(normalizedMinutes, MIN_CUSTOM_POMODORO_MINUTES),
+    MAX_CUSTOM_POMODORO_MINUTES
+  );
+}
+
+function setTimerMode(timerMode) {
+  if (state.timer.isRunning || getTimerElapsedMs() > 0) {
+    setStatus("Save elapsed time before changing timer mode.", true);
+    updateTimerModeControls();
+    return;
+  }
+
+  state.timer.mode = normalizeTimerMode(timerMode);
+  state.timer.completed = false;
+  updateTimerDisplay();
+}
+
+function handlePomodoroCustomChange() {
+  const minutes = normalizeCustomPomodoroMinutes(elements.pomodoroCustomInput.value);
+  elements.pomodoroCustomInput.value = String(minutes);
+
+  if (state.timer.isRunning || getTimerElapsedMs() > 0) {
+    setStatus("Save elapsed time before changing timer duration.", true);
+    elements.pomodoroCustomInput.value = String(state.timer.customMinutes);
+    return;
+  }
+
+  state.timer.customMinutes = minutes;
+  if (state.timer.mode === "pomodoro-custom") {
+    state.timer.completed = false;
+    updateTimerDisplay();
+  } else {
+    updateTimerModeControls();
+  }
+}
+
+function completePomodoroIfFinished() {
+  const durationMs = getTimerDurationMs();
+  if (!state.timer.isRunning || !durationMs || getTimerElapsedMs() < durationMs) {
+    return;
+  }
+
+  if (state.timer.intervalId) {
+    window.clearInterval(state.timer.intervalId);
+  }
+
+  state.timer.isRunning = false;
+  state.timer.startedAt = null;
+  state.timer.elapsedMs = durationMs;
+  state.timer.intervalId = null;
+  state.timer.completed = true;
+  setStatus("Pomodoro complete. Save elapsed time when ready.");
+}
+
+function updateTimerModeControls() {
+  const hasElapsed = getTimerElapsedMs() > 0;
+  const controlsDisabled = !state.focusTask || state.timer.isRunning || hasElapsed;
+
+  for (const button of elements.timerModeButtons) {
+    const active = normalizeTimerMode(button.dataset.timerMode) === normalizeTimerMode(state.timer.mode);
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+    button.disabled = controlsDisabled;
+  }
+
+  elements.pomodoroCustomInput.value = String(
+    normalizeCustomPomodoroMinutes(state.timer.customMinutes)
+  );
+  elements.pomodoroCustomInput.disabled =
+    controlsDisabled || state.timer.mode !== "pomodoro-custom";
 }
 
 function updateTimerDisplay() {
-  elements.focusTimer.textContent = formatDuration(getTimerElapsedMs());
+  completePomodoroIfFinished();
+  elements.focusTimer.textContent = formatDuration(getTimerDisplayMs());
+  updateTimerModeControls();
 
   if (!state.focusTask) {
     renderDailyTimeSummary();
@@ -1895,8 +2044,17 @@ function updateTimerDisplay() {
   }
 
   const hasElapsed = getTimerElapsedMs() > 0;
+  const isPomodoro = Boolean(getTimerDurationMs());
+  const pomodoroFinished = isPomodoro && state.timer.completed;
   elements.startTimerButton.disabled = state.timer.isRunning;
-  elements.startTimerButton.textContent = hasElapsed && !state.timer.isRunning ? "Resume Focus" : "Start Focus";
+  if (pomodoroFinished) {
+    elements.startTimerButton.disabled = true;
+    elements.startTimerButton.textContent = "Pomodoro Complete";
+  } else if (hasElapsed && !state.timer.isRunning) {
+    elements.startTimerButton.textContent = isPomodoro ? "Resume Pomodoro" : "Resume Focus";
+  } else {
+    elements.startTimerButton.textContent = isPomodoro ? "Start Pomodoro" : "Start Focus";
+  }
   elements.stopTimerButton.disabled = !state.timer.isRunning && !hasElapsed;
   elements.stopTimerButton.textContent = state.timer.isRunning ? "Stop & Save" : "Save Elapsed";
   elements.clearFocusButton.disabled = state.timer.isRunning || hasElapsed;

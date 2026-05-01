@@ -629,6 +629,67 @@ select option:checked {
   gap: 10px;
 }
 
+.timer-mode-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.timer-mode-options {
+  display: inline-grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  min-width: min(100%, 356px);
+  border-radius: 16px;
+  padding: 3px;
+  background: rgba(255, 255, 255, 0.065);
+}
+
+.timer-mode-button {
+  min-width: 0;
+  min-height: 32px;
+  border: 0;
+  border-radius: 13px;
+  padding: 0 10px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 12px;
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+
+.timer-mode-button.active {
+  color: var(--accent-contrast);
+  background: var(--accent);
+}
+
+.timer-mode-button.active:disabled {
+  opacity: 0.82;
+}
+
+.pomodoro-custom-field {
+  display: grid;
+  grid-template-columns: auto 72px;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  padding: 0 10px;
+  color: var(--muted);
+  background: var(--button-secondary);
+}
+
+.pomodoro-custom-field input {
+  width: 58px;
+  min-height: 28px;
+  border-radius: 10px;
+  padding: 0 8px;
+  text-align: center;
+}
+
 .timer-actions {
   margin-top: 12px;
 }
@@ -1735,6 +1796,18 @@ label,
   min-height: 246px;
 }
 
+.focus-session-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.72fr) minmax(340px, 1fr);
+  gap: 28px;
+  align-items: start;
+  min-height: 246px;
+}
+
+.focus-session-controls {
+  min-width: 0;
+}
+
 .focus-empty {
   display: flex;
   min-height: 232px;
@@ -1798,6 +1871,37 @@ label,
 
 .focus-card-actions {
   border-top: 0;
+}
+
+.focus-session-controls .timer-panel {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  max-width: 480px;
+}
+
+.focus-session-controls .timer-display,
+.focus-session-controls #focusTimeTotal {
+  justify-self: start;
+}
+
+.focus-session-controls #focusTimeTotal {
+  margin-top: 3px;
+  padding-bottom: 0;
+}
+
+.focus-session-controls .timer-actions,
+.focus-session-controls .focus-card-actions {
+  justify-content: flex-start;
+  max-width: 520px;
+}
+
+.focus-session-layout .focus-notes-panel {
+  align-self: stretch;
+  min-height: 100%;
+}
+
+.focus-session-layout .focus-notes-panel textarea {
+  min-height: 150px;
 }
 
 .toolbar {
@@ -1999,6 +2103,19 @@ body.theme-light .focus-panel {
     radial-gradient(circle at 30% 0%, rgba(112, 88, 223, 0.12), transparent 38%),
     linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(246, 248, 253, 0.88));
   box-shadow: 0 18px 42px rgba(80, 94, 120, 0.14);
+}
+
+body.theme-light .focus-notes-panel {
+  border-color: rgba(48, 58, 74, 0.13);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(112, 88, 223, 0.08), transparent 44%),
+    rgba(255, 255, 255, 0.66);
+}
+
+body.theme-light .focus-notes-panel textarea,
+body.theme-light .focus-notes-tools {
+  border-color: rgba(48, 58, 74, 0.13);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 body.theme-light .timer-display {
@@ -2212,6 +2329,16 @@ label,
 
   .board-grid {
     grid-template-columns: 1fr;
+  }
+
+  .focus-session-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .focus-session-controls .timer-panel,
+  .focus-session-controls .timer-actions,
+  .focus-session-controls .focus-card-actions {
+    max-width: none;
   }
 }
 
@@ -2503,6 +2630,31 @@ body.focus-mode .focus-card-actions .secondary-button {
   min-height: 36px;
   border-radius: 9px;
   padding: 0 8px;
+}
+
+body.focus-mode .focus-session-layout {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 14px;
+}
+
+body.focus-mode .focus-session-controls .timer-panel,
+body.focus-mode .focus-session-controls .timer-actions,
+body.focus-mode .focus-session-controls .focus-card-actions {
+  max-width: none;
+}
+
+body.focus-mode .focus-session-controls .timer-panel {
+  align-items: center;
+}
+
+body.focus-mode .focus-session-controls #focusTimeTotal {
+  margin-top: 0;
+}
+
+body.focus-mode .focus-session-layout .focus-notes-panel {
+  min-height: 0;
 }
 
 .focus-notes-panel {

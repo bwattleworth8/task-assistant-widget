@@ -37,7 +37,8 @@ Build a local Windows desktop widget that helps plan, organize, and focus on Tre
 
 - Current Focus starts empty.
 - User explicitly selects a task to focus.
-- Timer runs as an open-ended count-up session.
+- Timer can run as an open-ended count-up session or a Pomodoro countdown.
+- Pomodoro options include 25 minute, 50 minute, and custom countdown sessions.
 - Clicking **Start Focus** enters Focus Mode and begins the session.
 - Stopped timer sessions write minutes to Trello custom field `Time Spent (mins)`.
 - Saved timer sessions are recorded locally for the Plan Mode Daily Summary.
@@ -92,7 +93,7 @@ Build a local Windows desktop widget that helps plan, organize, and focus on Tre
 
 ### Focus Notes Trello Comments
 
-- Focus notes are editable in Focus Mode and stored locally while drafting.
+- Focus notes are editable in the Plan Mode current-focus pane and Focus Mode rail, and stored locally while drafting.
 - The **Bold**, **Italic**, **List**, and **Link** note toolbar controls insert Markdown-style formatting.
 - When focus is cleared, completed, or replaced, non-empty notes are posted to the Trello card comments/activity section.
 - Local notes are cleared only after Trello confirms the comment write.
@@ -143,10 +144,9 @@ Notes are stored by Trello card ID in browser `localStorage` while drafting. Whe
 ## Roadmap Backlog
 
 1. **Task Cleanup panel:** identify cards with missing due dates, missing labels, overdue state, or other planning gaps.
-2. **Pomodoro presets:** add countdown sessions alongside the existing stopwatch.
-3. **Status Adjuster:** update task status from the widget, likely through list moves, labels, or custom fields.
-4. **Checklist / Definition Of Done:** show checklist progress in Focus Mode.
-5. **LLM Planning Assistant:** add a read-only Plan Mode advisor for daily planning, next-task suggestions, cleanup review, and task-context Q&A.
+2. **Status Adjuster:** update task status from the widget, likely through list moves, labels, or custom fields.
+3. **Checklist / Definition Of Done:** show checklist progress in Focus Mode.
+4. **LLM Planning Assistant:** add a read-only Plan Mode advisor for daily planning, next-task suggestions, cleanup review, and task-context Q&A.
 
 ## Validation Plan
 
@@ -162,6 +162,8 @@ Notes are stored by Trello card ID in browser `localStorage` while drafting. Whe
 - Verify stale queue IDs are pruned only after successful refresh.
 - Verify clearing/completing focus shows the next Today Queue suggestion without auto-focusing it.
 - Verify Focus Mode anchors to the left side and can exit back to full Plan Mode.
+- Verify Pomodoro countdown options include 25 minute, 50 minute, and custom sessions alongside the stopwatch.
+- Verify completed Pomodoro sessions stop at zero and require the normal explicit save to write time to Trello.
 - Verify Plan Mode keeps the sidebar fixed while only the workspace scrolls.
 - Verify the Lists section scrolls independently above the Daily Summary when many lists are present.
 - Verify running and saving focus time update Daily Summary total time and distinct task count.

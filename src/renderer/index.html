@@ -235,43 +235,59 @@
             </div>
 
             <div id="focusActive" class="hidden">
-              <div class="focus-heading">
-                <p class="eyebrow">Current Focus</p>
-                <div class="focus-heading-actions">
-                  <button class="secondary-button mode-button compact-mode-button inline-plan-button" type="button" data-view-mode="planning">Plan Mode</button>
+              <div class="focus-session-layout">
+                <div class="focus-session-controls">
+                  <div class="focus-heading">
+                    <p class="eyebrow">Current Focus</p>
+                    <div class="focus-heading-actions">
+                      <button class="secondary-button mode-button compact-mode-button inline-plan-button" type="button" data-view-mode="planning">Plan Mode</button>
+                    </div>
+                  </div>
+                  <h2 id="focusTitle"></h2>
+                  <div id="focusMeta" class="task-meta"></div>
+                  <div class="timer-mode-panel" aria-label="Timer mode">
+                    <div class="timer-mode-options" role="group" aria-label="Timer mode">
+                      <button class="timer-mode-button active" type="button" data-timer-mode="stopwatch" aria-pressed="true">Stopwatch</button>
+                      <button class="timer-mode-button" type="button" data-timer-mode="pomodoro-25" aria-pressed="false">25m</button>
+                      <button class="timer-mode-button" type="button" data-timer-mode="pomodoro-50" aria-pressed="false">50m</button>
+                      <button class="timer-mode-button" type="button" data-timer-mode="pomodoro-custom" aria-pressed="false">Custom</button>
+                    </div>
+                    <label class="pomodoro-custom-field" for="pomodoroCustomInput">
+                      <span>Custom min</span>
+                      <input id="pomodoroCustomInput" type="number" min="1" max="240" step="1" value="25" />
+                    </label>
+                  </div>
+                  <div class="timer-panel">
+                    <p id="focusTimer" class="timer-display">00:00:00</p>
+                    <p id="focusTimeTotal">Time spent: not set</p>
+                  </div>
+                  <div class="task-actions timer-actions">
+                    <button id="startTimerButton" class="primary-button" type="button">Start Focus</button>
+                    <button id="stopTimerButton" class="secondary-button" type="button" disabled>Save Elapsed</button>
+                  </div>
+                  <div class="task-actions focus-card-actions">
+                    <button id="completeFocusButton" class="secondary-button" type="button">Complete</button>
+                    <button id="openFocusButton" class="secondary-button" type="button">Open</button>
+                    <button id="clearFocusButton" class="secondary-button" type="button">End Focus Session</button>
+                  </div>
                 </div>
-              </div>
-              <h2 id="focusTitle"></h2>
-              <div id="focusMeta" class="task-meta"></div>
-              <div class="timer-panel">
-                <p id="focusTimer" class="timer-display">00:00:00</p>
-                <p id="focusTimeTotal">Time spent: not set</p>
-              </div>
-              <div class="task-actions timer-actions">
-                <button id="startTimerButton" class="primary-button" type="button">Start Focus</button>
-                <button id="stopTimerButton" class="secondary-button" type="button" disabled>Save Elapsed</button>
-              </div>
-              <div class="task-actions focus-card-actions">
-                <button id="completeFocusButton" class="secondary-button" type="button">Complete</button>
-                <button id="openFocusButton" class="secondary-button" type="button">Open</button>
-                <button id="clearFocusButton" class="secondary-button" type="button">End Focus Session</button>
-              </div>
-            </div>
-          </section>
 
-          <section id="focusNotesPanel" class="focus-notes-panel focus-mode-only" aria-label="Focus notes">
-            <p class="eyebrow">Notes</p>
-            <p class="focus-notes-hint">Add notes or thoughts for this focus session.</p>
-            <label class="sr-only" for="focusNotesInput">Focus notes</label>
-            <textarea id="focusNotesInput" maxlength="1000" placeholder="e.g. Things to look into, blockers, ideas..."></textarea>
-            <div class="focus-notes-footer">
-              <div class="focus-notes-tools" role="toolbar" aria-label="Note formatting tools">
-                <button type="button" data-note-format="bold" title="Bold" aria-label="Bold">B</button>
-                <button type="button" data-note-format="italic" title="Italic" aria-label="Italic">I</button>
-                <button type="button" data-note-format="list" title="List" aria-label="List">List</button>
-                <button type="button" data-note-format="link" title="Link" aria-label="Link">Link</button>
+                <section id="focusNotesPanel" class="focus-notes-panel" aria-label="Focus notes">
+                  <p class="eyebrow">Notes</p>
+                  <p class="focus-notes-hint">Add notes or thoughts for this focus session.</p>
+                  <label class="sr-only" for="focusNotesInput">Focus notes</label>
+                  <textarea id="focusNotesInput" maxlength="1000" placeholder="e.g. Things to look into, blockers, ideas..."></textarea>
+                  <div class="focus-notes-footer">
+                    <div class="focus-notes-tools" role="toolbar" aria-label="Note formatting tools">
+                      <button type="button" data-note-format="bold" title="Bold" aria-label="Bold">B</button>
+                      <button type="button" data-note-format="italic" title="Italic" aria-label="Italic">I</button>
+                      <button type="button" data-note-format="list" title="List" aria-label="List">List</button>
+                      <button type="button" data-note-format="link" title="Link" aria-label="Link">Link</button>
+                    </div>
+                    <p id="focusNotesCount">0 / 1000</p>
+                  </div>
+                </section>
               </div>
-              <p id="focusNotesCount">0 / 1000</p>
             </div>
           </section>
 

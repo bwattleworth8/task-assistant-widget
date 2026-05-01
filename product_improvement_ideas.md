@@ -50,6 +50,7 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 ### Time Tracking
 
 - Focus timer supports open-ended count-up sessions.
+- Focus timer supports 25 minute, 50 minute, and custom Pomodoro countdown sessions.
 - Clicking **Start Focus** enters Focus Mode automatically.
 - Stopped sessions are saved to Trello custom field `Time Spent (mins)`.
 - Timer UI uses JetBrains Mono with tabular numbers.
@@ -87,7 +88,7 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 
 ### Focus Notes Trello Comments
 
-- Focus Mode includes a notes field for the active task.
+- Plan Mode and Focus Mode include a shared notes field for the active task.
 - Notes are stored locally by Trello card ID while drafting.
 - The **Bold**, **Italic**, **List**, and **Link** toolbar buttons insert Markdown-style formatting.
 - Notes are written into the Trello card comments/activity section when focus is cleared, completed, or replaced.
@@ -123,15 +124,6 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
   - Missing owner.
   - Missing status metadata.
   - Missing estimate.
-
-### Pomodoro Presets
-
-- Add countdown options alongside the current stopwatch.
-- Candidate presets:
-  - 25 minute focus session.
-  - 50 minute focus session.
-  - Custom countdown duration.
-- Preserve the current open-ended stopwatch mode.
 
 ### Status Adjuster
 
@@ -185,7 +177,6 @@ This backlog captures ideas for evolving the Trello Focus Widget into a planning
 ## Suggested Build Order From Here
 
 1. Add Task Cleanup panel.
-2. Add Pomodoro presets.
-3. Add Status Adjuster.
-4. Add Checklist / Definition Of Done.
-5. Add LLM Planning Assistant.
+2. Add Status Adjuster.
+3. Add Checklist / Definition Of Done.
+4. Add LLM Planning Assistant.

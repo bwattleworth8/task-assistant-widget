@@ -63,14 +63,14 @@ Credentials are saved locally. When Electron `safeStorage` encryption is availab
 - Shows only the focus workflow:
   - Current task.
   - Metadata.
-  - Timer.
+  - Stopwatch or Pomodoro timer.
   - Complete/Open/End Focus Session actions.
   - Notes.
   - Exit Focus Mode button.
 
 ## Time Tracking
 
-- Timer is a count-up stopwatch.
+- Timer supports a count-up stopwatch plus 25 minute, 50 minute, and custom Pomodoro countdown sessions.
 - Saved time writes to Trello custom field `Time Spent (mins)`.
 - Saved sessions are recorded locally for the Plan Mode Daily Summary after Trello confirms the time save.
 - Completed tasks are recorded locally for the Plan Mode Daily Summary after Trello confirms completion.
@@ -78,6 +78,7 @@ Credentials are saved locally. When Electron `safeStorage` encryption is availab
 
 ## Focus Notes
 
+- Focus notes are available in the Plan Mode current-focus pane and Focus Mode rail.
 - Focus notes are stored by Trello card ID in `localStorage` while drafting.
 - Non-empty notes are written as Trello card comments when focus is cleared, completed, or replaced.
 - Local notes are cleared only after Trello confirms the comment write.
