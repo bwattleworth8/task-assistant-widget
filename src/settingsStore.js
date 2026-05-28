@@ -183,8 +183,11 @@ function sanitizeSystemNotificationSilence(snapshot) {
   const values = Array.isArray(snapshot.values)
     ? snapshot.values.map(sanitizeRegistryValueSnapshot).filter(Boolean)
     : [];
+  const notificationHandlers = Array.isArray(snapshot.notificationHandlers)
+    ? snapshot.notificationHandlers.map(sanitizeNotificationHandlerSnapshot).filter(Boolean)
+    : [];
 
-  if (!values.length) {
+  if (!values.length && !notificationHandlers.length) {
     return null;
   }
 
@@ -192,7 +195,8 @@ function sanitizeSystemNotificationSilence(snapshot) {
     active: true,
     mode: String(snapshot.mode || "dnd").trim() === "toasts" ? "toasts" : "dnd",
     startedAt: String(snapshot.startedAt || "").trim(),
-    values
+    values,
+    notificationHandlers
   };
 }
 
@@ -214,6 +218,48 @@ function sanitizeRegistryValueSnapshot(valueSnapshot) {
   if (exists) {
     sanitized.type = String(valueSnapshot.type || "REG_DWORD").trim() || "REG_DWORD";
     sanitized.value = String(valueSnapshot.value ?? "").trim();
+  }
+
+  return sanitized;
+}
+
+function sanitizeNotificationHandlerSnapshot(handlerSnapshot) {
+  const primaryId = String(handlerSnapshot?.primaryId || "").trim();
+
+  if (!primaryId) {
+    return null;
+  }
+
+  const exists = Boolean(handlerSnapshot.exists);
+  const settings = Array.isArray(handlerSnapshot.settings)
+    ? handlerSnapshot.settings.map(sanitizeNotificationHandlerSettingSnapshot).filter(Boolean)
+    : [];
+
+  return {
+    primaryId,
+    exists,
+    settings
+  };
+}
+
+function sanitizeNotificationHandlerSettingSnapshot(settingSnapshot) {
+  const key = String(settingSnapshot?.key || "").trim();
+
+  if (!key) {
+    return null;
+  }
+
+  const sanitized = {
+    key,
+    exists: Boolean(settingSnapshot.exists)
+  };
+
+  if (sanitized.exists) {
+    sanitized.value = Number(settingSnapshot.value);
+
+    if (!Number.isFinite(sanitized.value)) {
+      sanitized.value = 0;
+    }
   }
 
   return sanitized;

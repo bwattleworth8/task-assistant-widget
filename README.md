@@ -97,6 +97,7 @@ Credentials are saved locally. When Electron `safeStorage` encryption is availab
 - Sidebar navigation for Home, Focus, Today, This Week, and All Tasks.
 - Selectable Lists filters that narrow the visible planning panes to chosen Trello lists.
 - Settings, refresh, pin-on-top, and theme controls.
+- Optional Windows notification banner, sound, and New Outlook alert suppression during Focus Mode.
 - Filter controls for all, due soon, overdue, and no due date.
 - Native window close quits the app; hide/minimize behavior remains explicit.
 - Local Today Queue and This Week Queue.
