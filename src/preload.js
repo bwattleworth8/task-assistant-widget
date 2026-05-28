@@ -48,6 +48,11 @@ contextBridge.exposeInMainWorld("taskWidget", {
     ipcRenderer.on("theme:changed", listener);
     return () => ipcRenderer.removeListener("theme:changed", listener);
   },
+  onSystemNotificationSilenceStatus: (callback) => {
+    const listener = (_event, status) => callback(status);
+    ipcRenderer.on("systemNotificationSilence:status", listener);
+    return () => ipcRenderer.removeListener("systemNotificationSilence:status", listener);
+  },
   onUpdateStatus: (callback) => {
     const listener = (_event, status) => callback(status);
     ipcRenderer.on("appUpdate:status", listener);

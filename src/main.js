@@ -1,6 +1,8 @@
 const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, nativeTheme, screen, shell } = require("electron");
 const { autoUpdater } = require("electron-updater");
+const { execFile, execFileSync } = require("node:child_process");
 const path = require("node:path");
+const { promisify } = require("node:util");
 const {
   getPublicSettings,
   loadCredentials,
@@ -9,6 +11,8 @@ const {
   saveSettings
 } = require("./settingsStore");
 const { TrelloClient } = require("./trelloClient");
+
+const execFileAsync = promisify(execFile);
 
 let mainWindow;
 let focusTimerWindow;
@@ -20,6 +24,7 @@ let floatingTimerDragState = null;
 let latestFocusTimerState = null;
 let updaterSetupComplete = false;
 let currentUpdateStatus = null;
+let systemNotificationSilenceOperation = Promise.resolve();
 
 const APP_ICON_DATA_URL =
   "data:image/png;base64,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";
@@ -49,6 +54,38 @@ const FLOATING_TIMER_ALWAYS_ON_TOP_LEVEL = "screen-saver";
 const ACTIVE_UPDATE_STATES = new Set(["checking", "downloading"]);
 const UPDATE_RELEASE_ACCESS_MESSAGE =
   "Could not read published GitHub releases. Make sure bwattleworth8/work-slate is public and the release is published, not draft.";
+const WINDOWS_NOTIFICATION_SETTINGS_KEY =
+  "HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings";
+const WINDOWS_FOCUS_ASSIST_KEY =
+  "HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\FocusAssist";
+const WINDOWS_DND_REGISTRY_VALUES = [
+  {
+    path: WINDOWS_NOTIFICATION_SETTINGS_KEY,
+    name: "NOC_GLOBAL_SETTING_DND",
+    type: "REG_DWORD",
+    enabledValue: 1
+  },
+  {
+    path: WINDOWS_FOCUS_ASSIST_KEY,
+    name: "QuietHoursActive",
+    type: "REG_DWORD",
+    enabledValue: 1
+  },
+  {
+    path: WINDOWS_FOCUS_ASSIST_KEY,
+    name: "QuietHoursEnabled",
+    type: "REG_DWORD",
+    enabledValue: 1
+  }
+];
+const WINDOWS_TOAST_SUPPRESSION_REGISTRY_VALUES = [
+  {
+    path: WINDOWS_NOTIFICATION_SETTINGS_KEY,
+    name: "NOC_GLOBAL_SETTING_TOASTS_ENABLED",
+    type: "REG_DWORD",
+    enabledValue: 0
+  }
+];
 
 function getUpdateVersion(info) {
   return String(info?.version || info?.tag || "").trim();
@@ -315,6 +352,7 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
   mainWindow.webContents.once("did-finish-load", () => {
     setUpdateStatus();
+    queueSystemNotificationSilenceReconcile("startup");
   });
   mainWindow.setMenuBarVisibility(false);
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -381,6 +419,428 @@ function applyNativeTheme(theme) {
 
 function getWindowBackgroundColor(theme) {
   return normalizeTheme(theme) === "light" ? "#f4f7fb" : "#11161d";
+}
+
+function shouldSilenceSystemNotifications(settings = loadSettings()) {
+  return Boolean(
+    process.platform === "win32" &&
+      settings.notifications?.silenceDuringFocus &&
+      normalizeViewMode(settings.viewMode) === "focus"
+  );
+}
+
+function queueSystemNotificationSilenceReconcile(reason) {
+  systemNotificationSilenceOperation = systemNotificationSilenceOperation
+    .catch(() => {})
+    .then(() => reconcileSystemNotificationSilence(reason))
+    .catch((error) => {
+      reportSystemNotificationSilenceStatus({
+        ok: false,
+        active: false,
+        reason,
+        message: `Could not update Windows notification silencing: ${formatSystemNotificationError(error)}`
+      });
+      return false;
+    });
+
+  return systemNotificationSilenceOperation;
+}
+
+async function reconcileSystemNotificationSilence(reason = "settings") {
+  const settings = loadSettings();
+
+  if (shouldSilenceSystemNotifications(settings)) {
+    await enableSystemNotificationSilence(reason, settings);
+    return;
+  }
+
+  await disableSystemNotificationSilence(reason, settings);
+}
+
+async function enableSystemNotificationSilence(reason, settings = loadSettings()) {
+  if (process.platform !== "win32") {
+    reportSystemNotificationSilenceStatus({
+      ok: false,
+      active: false,
+      reason,
+      message: "Windows notification silencing is only available on Windows."
+    });
+    return false;
+  }
+
+  if (settings.systemNotificationSilence?.active) {
+    const existingSpecs = getSystemNotificationSilenceSpecs(settings.systemNotificationSilence.mode);
+
+    try {
+      await applyRegistryValues(existingSpecs);
+      await verifyRegistryValues(existingSpecs);
+      return true;
+    } catch (error) {
+      reportSystemNotificationSilenceStatus({
+        ok: false,
+        active: false,
+        reason,
+        message: `Could not keep Windows notifications silenced: ${formatSystemNotificationError(error)}`
+      });
+      return false;
+    }
+  }
+
+  const dndSnapshot = await takeRegistrySnapshot(WINDOWS_DND_REGISTRY_VALUES);
+  saveSystemNotificationSilenceSnapshot("dnd", dndSnapshot);
+
+  try {
+    await applyRegistryValues(WINDOWS_DND_REGISTRY_VALUES);
+    await verifyRegistryValues(WINDOWS_DND_REGISTRY_VALUES);
+    reportSystemNotificationSilenceStatus({
+      ok: true,
+      active: true,
+      reason,
+      message: ""
+    });
+    return true;
+  } catch (error) {
+    const restored = await restoreRegistrySnapshotBestEffort(dndSnapshot);
+    if (!restored) {
+      reportSystemNotificationSilenceStatus({
+        ok: false,
+        active: true,
+        reason,
+        message: `Could not silence Windows notifications during Focus Mode: ${formatSystemNotificationError(error)}`
+      });
+      return false;
+    }
+
+    saveSettings({ systemNotificationSilence: null });
+  }
+
+  const toastSnapshot = await takeRegistrySnapshot(WINDOWS_TOAST_SUPPRESSION_REGISTRY_VALUES);
+  saveSystemNotificationSilenceSnapshot("toasts", toastSnapshot);
+
+  try {
+    await applyRegistryValues(WINDOWS_TOAST_SUPPRESSION_REGISTRY_VALUES);
+    await verifyRegistryValues(WINDOWS_TOAST_SUPPRESSION_REGISTRY_VALUES);
+    reportSystemNotificationSilenceStatus({
+      ok: true,
+      active: true,
+      reason,
+      message: ""
+    });
+    return true;
+  } catch (error) {
+    const restored = await restoreRegistrySnapshotBestEffort(toastSnapshot);
+    if (restored) {
+      saveSettings({ systemNotificationSilence: null });
+    }
+
+    reportSystemNotificationSilenceStatus({
+      ok: false,
+      active: !restored,
+      reason,
+      message: `Could not silence Windows notifications during Focus Mode: ${formatSystemNotificationError(error)}`
+    });
+    return false;
+  }
+}
+
+async function disableSystemNotificationSilence(reason, settings = loadSettings()) {
+  const snapshot = settings.systemNotificationSilence;
+
+  if (!snapshot?.active) {
+    return true;
+  }
+
+  try {
+    await restoreRegistrySnapshot(snapshot.values);
+    saveSettings({ systemNotificationSilence: null });
+    reportSystemNotificationSilenceStatus({
+      ok: true,
+      active: false,
+      reason,
+      message: ""
+    });
+    return true;
+  } catch (error) {
+    reportSystemNotificationSilenceStatus({
+      ok: false,
+      active: true,
+      reason,
+      message: `Could not restore Windows notification settings: ${formatSystemNotificationError(error)}`
+    });
+    return false;
+  }
+}
+
+function restoreSystemNotificationSilenceSync() {
+  if (process.platform !== "win32") {
+    return;
+  }
+
+  const snapshot = loadSettings().systemNotificationSilence;
+
+  if (!snapshot?.active) {
+    return;
+  }
+
+  try {
+    restoreRegistrySnapshotSync(snapshot.values);
+    saveSettings({ systemNotificationSilence: null });
+  } catch (error) {
+    reportSystemNotificationSilenceStatus({
+      ok: false,
+      active: true,
+      reason: "quit",
+      message: `Could not restore Windows notification settings: ${formatSystemNotificationError(error)}`
+    });
+  }
+}
+
+function saveSystemNotificationSilenceSnapshot(mode, values) {
+  saveSettings({
+    systemNotificationSilence: {
+      active: true,
+      mode,
+      startedAt: new Date().toISOString(),
+      values
+    }
+  });
+}
+
+function getSystemNotificationSilenceSpecs(mode) {
+  return mode === "toasts" ? WINDOWS_TOAST_SUPPRESSION_REGISTRY_VALUES : WINDOWS_DND_REGISTRY_VALUES;
+}
+
+async function takeRegistrySnapshot(registryValues) {
+  const snapshots = [];
+
+  for (const registryValue of registryValues) {
+    snapshots.push(await readRegistryValue(registryValue));
+  }
+
+  return snapshots;
+}
+
+async function applyRegistryValues(registryValues) {
+  for (const registryValue of registryValues) {
+    await setRegistryValue(registryValue);
+  }
+}
+
+async function verifyRegistryValues(registryValues) {
+  for (const registryValue of registryValues) {
+    const currentValue = await readRegistryValue(registryValue);
+
+    if (
+      !currentValue.exists ||
+      currentValue.type !== registryValue.type ||
+      parseRegistryDword(currentValue.value) !== registryValue.enabledValue
+    ) {
+      throw new Error(`Windows did not accept ${registryValue.name}.`);
+    }
+  }
+}
+
+async function restoreRegistrySnapshotBestEffort(snapshot) {
+  try {
+    await restoreRegistrySnapshot(snapshot);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function restoreRegistrySnapshot(snapshot) {
+  for (const registryValue of snapshot || []) {
+    await restoreRegistryValue(registryValue);
+  }
+}
+
+function restoreRegistrySnapshotSync(snapshot) {
+  for (const registryValue of snapshot || []) {
+    restoreRegistryValueSync(registryValue);
+  }
+}
+
+async function readRegistryValue(registryValue) {
+  try {
+    const { stdout } = await execFileAsync(
+      "reg.exe",
+      ["query", registryValue.path, "/v", registryValue.name],
+      { windowsHide: true }
+    );
+
+    return parseRegistryQuery(stdout, registryValue);
+  } catch (error) {
+    if (isRegistryMissingError(error)) {
+      return {
+        path: registryValue.path,
+        name: registryValue.name,
+        exists: false
+      };
+    }
+
+    throw error;
+  }
+}
+
+async function setRegistryValue(registryValue) {
+  await execFileAsync(
+    "reg.exe",
+    [
+      "add",
+      registryValue.path,
+      "/v",
+      registryValue.name,
+      "/t",
+      registryValue.type,
+      "/d",
+      String(registryValue.enabledValue),
+      "/f"
+    ],
+    { windowsHide: true }
+  );
+}
+
+async function restoreRegistryValue(registryValue) {
+  if (!registryValue.exists) {
+    await deleteRegistryValue(registryValue);
+    return;
+  }
+
+  await execFileAsync(
+    "reg.exe",
+    [
+      "add",
+      registryValue.path,
+      "/v",
+      registryValue.name,
+      "/t",
+      registryValue.type,
+      "/d",
+      getRegistryRestoreData(registryValue),
+      "/f"
+    ],
+    { windowsHide: true }
+  );
+}
+
+async function deleteRegistryValue(registryValue) {
+  try {
+    await execFileAsync(
+      "reg.exe",
+      ["delete", registryValue.path, "/v", registryValue.name, "/f"],
+      { windowsHide: true }
+    );
+  } catch (error) {
+    if (!isRegistryMissingError(error)) {
+      throw error;
+    }
+  }
+}
+
+function restoreRegistryValueSync(registryValue) {
+  if (!registryValue.exists) {
+    deleteRegistryValueSync(registryValue);
+    return;
+  }
+
+  execFileSync(
+    "reg.exe",
+    [
+      "add",
+      registryValue.path,
+      "/v",
+      registryValue.name,
+      "/t",
+      registryValue.type,
+      "/d",
+      getRegistryRestoreData(registryValue),
+      "/f"
+    ],
+    { windowsHide: true }
+  );
+}
+
+function deleteRegistryValueSync(registryValue) {
+  try {
+    execFileSync(
+      "reg.exe",
+      ["delete", registryValue.path, "/v", registryValue.name, "/f"],
+      { windowsHide: true }
+    );
+  } catch (error) {
+    if (!isRegistryMissingError(error)) {
+      throw error;
+    }
+  }
+}
+
+function parseRegistryQuery(stdout, registryValue) {
+  const targetName = registryValue.name.toLowerCase();
+  const lines = String(stdout || "").split(/\r?\n/);
+
+  for (const line of lines) {
+    const match = line.trim().match(/^(\S+)\s+(REG_\S+)\s*(.*)$/);
+
+    if (!match || match[1].toLowerCase() !== targetName) {
+      continue;
+    }
+
+    return {
+      path: registryValue.path,
+      name: registryValue.name,
+      exists: true,
+      type: match[2],
+      value: match[3].trim()
+    };
+  }
+
+  throw new Error(`Could not read ${registryValue.name}.`);
+}
+
+function parseRegistryDword(value) {
+  const normalizedValue = String(value || "").trim();
+
+  if (/^0x/i.test(normalizedValue)) {
+    return Number.parseInt(normalizedValue, 16);
+  }
+
+  return Number(normalizedValue);
+}
+
+function getRegistryRestoreData(registryValue) {
+  if (registryValue.type === "REG_DWORD") {
+    const parsedValue = parseRegistryDword(registryValue.value);
+
+    if (Number.isFinite(parsedValue)) {
+      return String(parsedValue);
+    }
+  }
+
+  return String(registryValue.value ?? "");
+}
+
+function isRegistryMissingError(error) {
+  const output = `${error?.stdout || ""}\n${error?.stderr || ""}\n${error?.message || ""}`;
+  return /unable to find|cannot find|not found/i.test(output);
+}
+
+function formatSystemNotificationError(error) {
+  const output = String(error?.stderr || error?.stdout || error?.message || error || "").trim();
+  return output.split(/\r?\n/).find(Boolean) || "Windows rejected the notification setting.";
+}
+
+function reportSystemNotificationSilenceStatus(status) {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+
+  mainWindow.webContents.send("systemNotificationSilence:status", {
+    ok: Boolean(status.ok),
+    active: Boolean(status.active),
+    reason: String(status.reason || ""),
+    message: String(status.message || "")
+  });
 }
 
 function getWindowBoundsForMode(settings, viewMode, currentBounds = {}) {
@@ -894,7 +1354,7 @@ function showMainWindow() {
   hideFloatingTimerWindow();
 }
 
-function setViewMode(viewMode) {
+async function setViewMode(viewMode) {
   const nextViewMode = normalizeViewMode(viewMode);
 
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -914,6 +1374,8 @@ function setViewMode(viewMode) {
   if (tray) {
     tray.setContextMenu(buildTrayMenu());
   }
+
+  await queueSystemNotificationSilenceReconcile("viewMode");
 
   return publicSettings;
 }
@@ -1072,7 +1534,7 @@ function getConfiguredClient() {
 function registerIpcHandlers() {
   ipcMain.handle("settings:get", () => getPublicSettings());
 
-  ipcMain.handle("settings:save", (_event, settings) => {
+  ipcMain.handle("settings:save", async (_event, settings) => {
     const nextSettings = settings || {};
     const userName = String(nextSettings.userName || "").trim();
     const quickAddTemplateCardId = String(nextSettings.quickAdd?.templateCardId || "").trim();
@@ -1082,11 +1544,15 @@ function registerIpcHandlers() {
       boardId: nextSettings.boardId || "",
       boardName: nextSettings.boardName || "",
       refreshMinutes: Number(nextSettings.refreshMinutes) || 5,
+      notifications: {
+        silenceDuringFocus: Boolean(nextSettings.notifications?.silenceDuringFocus)
+      },
       quickAdd: {
         templateCardId: quickAddTemplateCardId,
         templateCardName: quickAddTemplateCardName
       }
     });
+    await queueSystemNotificationSilenceReconcile("settings");
 
     return {
       ...getPublicSettings(),
@@ -1281,6 +1747,7 @@ app.whenReady().then(() => {
 app.on("before-quit", () => {
   app.isQuitting = true;
   saveWindowBounds();
+  restoreSystemNotificationSilenceSync();
 });
 
 app.on("window-all-closed", () => {

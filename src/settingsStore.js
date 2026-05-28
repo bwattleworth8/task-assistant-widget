@@ -34,6 +34,10 @@ const DEFAULT_SETTINGS = {
     templateCardId: "",
     templateCardName: ""
   },
+  notifications: {
+    silenceDuringFocus: false
+  },
+  systemNotificationSilence: null,
   boardId: "",
   boardName: "",
   encryptedCredentials: null,
@@ -107,7 +111,9 @@ function loadSettings() {
       week: sanitizeQueueIds(stored.queues?.week)
     },
     userName: sanitizeUserName(stored.userName),
-    quickAdd: sanitizeQuickAddSettings(stored.quickAdd)
+    quickAdd: sanitizeQuickAddSettings(stored.quickAdd),
+    notifications: sanitizeNotificationSettings(stored.notifications),
+    systemNotificationSilence: sanitizeSystemNotificationSilence(stored.systemNotificationSilence)
   };
 }
 
@@ -132,7 +138,16 @@ function saveSettings(nextSettings) {
     quickAdd: sanitizeQuickAddSettings({
       ...current.quickAdd,
       ...(nextSettings.quickAdd || {})
-    })
+    }),
+    notifications: sanitizeNotificationSettings({
+      ...current.notifications,
+      ...(nextSettings.notifications || {})
+    }),
+    systemNotificationSilence: sanitizeSystemNotificationSilence(
+      nextSettings.systemNotificationSilence === undefined
+        ? current.systemNotificationSilence
+        : nextSettings.systemNotificationSilence
+    )
   };
 
   writeJson(getSettingsPath(), merged);
@@ -152,6 +167,56 @@ function sanitizeQuickAddSettings(quickAdd) {
     templateCardId: String(quickAdd?.templateCardId || "").trim(),
     templateCardName: String(quickAdd?.templateCardName || "").trim()
   };
+}
+
+function sanitizeNotificationSettings(notifications) {
+  return {
+    silenceDuringFocus: Boolean(notifications?.silenceDuringFocus)
+  };
+}
+
+function sanitizeSystemNotificationSilence(snapshot) {
+  if (!snapshot || typeof snapshot !== "object" || snapshot.active !== true) {
+    return null;
+  }
+
+  const values = Array.isArray(snapshot.values)
+    ? snapshot.values.map(sanitizeRegistryValueSnapshot).filter(Boolean)
+    : [];
+
+  if (!values.length) {
+    return null;
+  }
+
+  return {
+    active: true,
+    mode: String(snapshot.mode || "dnd").trim() === "toasts" ? "toasts" : "dnd",
+    startedAt: String(snapshot.startedAt || "").trim(),
+    values
+  };
+}
+
+function sanitizeRegistryValueSnapshot(valueSnapshot) {
+  const pathValue = String(valueSnapshot?.path || "").trim();
+  const name = String(valueSnapshot?.name || "").trim();
+
+  if (!pathValue || !name) {
+    return null;
+  }
+
+  const exists = Boolean(valueSnapshot.exists);
+  const sanitized = {
+    path: pathValue,
+    name,
+    exists
+  };
+
+  if (exists) {
+    sanitized.type = String(valueSnapshot.type || "REG_DWORD").trim() || "REG_DWORD";
+    sanitized.value = String(valueSnapshot.value ?? "").trim();
+  }
+
+  return sanitized;
 }
 
 function sanitizeUserName(userName) {
@@ -222,6 +287,7 @@ function getPublicSettings() {
     refreshMinutes: settings.refreshMinutes,
     queues: settings.queues,
     quickAdd: settings.quickAdd,
+    notifications: settings.notifications,
     boardId: settings.boardId,
     boardName: settings.boardName,
     hasCredentials: Boolean(credentials?.apiKey && credentials?.token),

@@ -71,6 +71,7 @@ const elements = {
   fetchBoardsButton: document.querySelector("#fetchBoardsButton"),
   boardSelect: document.querySelector("#boardSelect"),
   refreshSelect: document.querySelector("#refreshSelect"),
+  silenceNotificationsToggle: document.querySelector("#silenceNotificationsToggle"),
   quickAddTemplateSelect: document.querySelector("#quickAddTemplateSelect"),
   refreshQuickAddOptionsButton: document.querySelector("#refreshQuickAddOptionsButton"),
   securityStatus: document.querySelector("#securityStatus"),
@@ -264,6 +265,13 @@ function bindEvents() {
     };
     syncSettingsUi();
   });
+  window.taskWidget.onSystemNotificationSilenceStatus((status) => {
+    if (!status?.message) {
+      return;
+    }
+
+    setStatus(status.message, !status.ok);
+  });
 
   window.taskWidget.onUpdateStatus((status) => {
     renderUpdateStatus(status, { showMessage: true });
@@ -437,6 +445,9 @@ async function handleUpdateButtonClick() {
 function syncSettingsUi() {
   elements.userNameInput.value = state.settings.userName || "";
   elements.refreshSelect.value = String(state.settings.refreshMinutes || 5);
+  elements.silenceNotificationsToggle.checked = Boolean(
+    state.settings.notifications?.silenceDuringFocus
+  );
   elements.boardName.textContent = state.settings.boardName || "";
   elements.securityStatus.textContent = state.settings.encryptionAvailable
     ? "Credentials will be encrypted on this computer."
@@ -1058,6 +1069,9 @@ async function saveSettings(event) {
       boardId,
       boardName: selectedOption?.textContent || "",
       refreshMinutes: Number(elements.refreshSelect.value),
+      notifications: {
+        silenceDuringFocus: elements.silenceNotificationsToggle.checked
+      },
       quickAdd: {
         templateCardId: quickAddTemplateCardId,
         templateCardName: quickAddTemplateCardId ? selectedTemplateOption?.textContent || "" : ""
